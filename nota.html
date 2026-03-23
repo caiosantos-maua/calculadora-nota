@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Calculadora de Nota</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 20px;
+      background: #f4f6f8;
+    }
+
+    .box {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    input {
+      width: 80px;
+      padding: 5px;
+      margin: 10px;
+      font-size: 16px;
+    }
+
+    .resultado {
+      margin-top: 15px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <h2>Calculadora de Nota</h2>
+
+    <div>
+      Nota 1:
+      <input type="number" id="n1" min="0" max="10" step="0.1">
+    </div>
+
+    <div>
+      Nota 2:
+      <input type="number" id="n2" min="0" max="10" step="0.1">
+    </div>
+
+    <div class="resultado" id="resultado">
+      Nota final: -
+    </div>
+  </div>
+
+  <script>
+    function calcular() {
+      let n1 = parseFloat(document.getElementById("n1").value) || 0;
+      let n2 = parseFloat(document.getElementById("n2").value) || 0;
+
+      let media = (n1 + n2) / 2;
+
+      document.getElementById("resultado").innerText =
+        "Nota final: " + media.toFixed(2);
+    }
+
+    document.getElementById("n1").addEventListener("input", calcular);
+    document.getElementById("n2").addEventListener("input", calcular);
+  </script>
+</body>
+</html>
