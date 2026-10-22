@@ -1,72 +1,437 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Calculadora de Nota</title>
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      padding: 20px;
-      background: #f4f6f8;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora de Notas ETC411</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: inputs à esquerda (provas, trabalhos), painel de resultado fixo à direita; empilha no celular com o resultado no topo.
+   Tema único claro, de propósito: a página vive dentro do Canvas, que é claro. */
+:root {
+  color-scheme: light;
+  --bg: #f3f6f7;
+  --surface: #ffffff;
+  --ink: #16232b;
+  --muted: #5a6971;
+  --line: #d6dee2;
+  --accent: #0d5874;
+  --accent-soft: #e3eff4;
+  --ok: #1d7347;
+  --ok-soft: #e2f3ea;
+  --warn: #9a5b00;
+  --warn-soft: #fbf0dc;
+  --bad: #a8241c;
+  --bad-soft: #fbe5e3;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-num: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+}
+.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 16px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+h1 { font-size: 1.35rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 .code { font-family: var(--font-num); font-size: 0.85em; color: var(--accent); margin-right: 6px; }
+.formula { font-family: var(--font-num); font-size: 0.8rem; color: var(--muted); }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
+@media (max-width: 800px) {
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .result { order: -1; position: static !important; }
+}
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px 16px; display: grid; gap: 12px; min-width: 0; }
+.card h2 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.card h2 .val { font-family: var(--font-num); letter-spacing: 0; text-transform: none; color: var(--ink); font-size: 0.85rem; }
+.inputs { display: grid; gap: 16px; min-width: 0; }
+.row { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); }
+.row:first-of-type { border-top: 0; padding-top: 0; }
+.row .lbl { font-weight: 600; font-size: 0.92rem; }
+.row .lbl small { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; line-height: 1.25; }
+.fields { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.f { display: grid; gap: 2px; width: 84px; }
+.f label { font-size: 0.72rem; color: var(--muted); font-family: var(--font-num); }
+.f input {
+  width: 100%; font: 600 1rem var(--font-num); color: var(--ink); text-align: center;
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 4px; background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+.f input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
+.f input.err { border-color: var(--bad); background: var(--bad-soft); }
+.f.ps input { border-style: dashed; }
+.spin { display: flex; gap: 2px; align-items: stretch; }
+.spin input { min-width: 0; flex: 1; }
+.st { display: grid; grid-template-rows: 1fr 1fr; gap: 2px; width: 18px; }
+.st button { padding: 0; border-radius: 4px; font-size: 0.5rem; line-height: 1; color: var(--muted); background: var(--bg); border: 1px solid var(--line); }
+.st button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.st button:disabled { opacity: 0.35; cursor: default; }
+.f.dropped input { color: var(--muted); text-decoration: line-through; }
+.f.subbed input { color: var(--muted); text-decoration: line-through; }
+.f.target input:placeholder-shown { border-color: var(--accent); background: var(--accent-soft); }
+.calc { margin-left: auto; font-family: var(--font-num); font-size: 0.85rem; color: var(--muted); white-space: nowrap; align-self: center; }
+.calc b { color: var(--ink); font-weight: 600; }
+@media (max-width: 520px) {
+  .row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .calc { margin-left: 0; width: 100%; }
+}
+.result { position: sticky; top: 12px; display: grid; gap: 12px; }
+.mf { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.mf .big { font: 600 2.6rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
+.mf .cap { font-size: 0.8rem; color: var(--muted); }
+.bar { position: relative; height: 10px; background: var(--line); border-radius: 5px; overflow: visible; }
+.bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--accent); transition: width .25s ease; }
+.bar .mark { position: absolute; left: 60%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
+.bar-l { display: flex; justify-content: space-between; font: 500 0.7rem var(--font-num); color: var(--muted); margin-top: 2px; }
+.bar-l span:nth-child(2) { position: relative; left: 10%; }
+.status { border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; background: var(--accent-soft); }
+.status .t { font-weight: 700; font-size: 1.02rem; }
+.status .need { font: 600 2rem/1.1 var(--font-num); }
+.status p { margin: 0; font-size: 0.88rem; }
+.status.ok { background: var(--ok-soft); color: var(--ok); }
+.status.warn { background: var(--warn-soft); color: var(--warn); }
+.status.bad { background: var(--bad-soft); color: var(--bad); }
+.status.ok p, .status.warn p, .status.bad p { color: var(--ink); }
+.parts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 0.85rem; margin: 0; }
+.parts dt { color: var(--muted); }
+.parts dd { margin: 0; text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+.note { font-size: 0.8rem; color: var(--muted); margin: 0; }
+.note b { color: var(--warn); font-weight: 600; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  font: 600 0.85rem var(--font-body); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+button:hover { border-color: var(--accent); color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer { font-size: 0.78rem; color: var(--muted); }
+.arrow { color: var(--muted); align-self: center; padding-bottom: 6px; }
+.mode { flex-basis: 100%; font-size: 0.76rem; color: var(--muted); }
+.f.computed input { background: var(--accent-soft); border-color: transparent; cursor: default; }
+.f.locked input { background: var(--bg); color: var(--muted); cursor: not-allowed; }
+.f input:disabled { opacity: 1; -webkit-text-fill-color: var(--muted); }
+.hint { margin: 0; font-size: 0.82rem; color: var(--bad); }
+.saved { font-size: 0.8rem; color: var(--muted); align-self: center; }
+@media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+</style>
 
-    .box {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 400px;
-      margin: auto;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-
-    input {
-      width: 80px;
-      padding: 5px;
-      margin: 10px;
-      font-size: 16px;
-    }
-
-    .resultado {
-      margin-top: 15px;
-      font-size: 20px;
-      font-weight: bold;
-    }
-  </style>
 </head>
-
 <body>
-  <div class="box">
-    <h2>Calculadora de Nota</h2>
+<div class="wrap">
+  <header>
+    <h1><span class="code" id="code">ETC411</span><span id="dname">Fenômenos de Transporte</span></h1>
+    <span class="formula" id="formula"></span>
+  </header>
 
-    <div>
-      Nota 1:
-      <input type="number" id="n1" min="0" max="10" step="0.1">
+  <div class="grid">
+    <div class="inputs">
+      <section class="card" aria-labelledby="hp">
+        <h2 id="hp">Provas <span class="val" id="mpv">MP = –</span></h2>
+        <div id="provas"></div>
+      </section>
+      <section class="card" aria-labelledby="ht">
+        <h2 id="ht">Trabalhos <span class="val" id="mtv">MT = –</span></h2>
+        <div id="trabalhos"></div>
+      </section>
+      <div class="actions">
+        <button type="button" id="ex">Ver um exemplo</button>
+        <button type="button" id="clr">Limpar tudo</button>
+        <span class="saved" id="saved"></span>
+      </div>
+      <p class="hint" id="halfmsg" hidden>Provas e notas de trabalho (T) só aceitam múltiplos de 0,5, como 7,0 ou 7,5. Os campos em vermelho não entram no cálculo.</p>
     </div>
 
-    <div>
-      Nota 2:
-      <input type="number" id="n2" min="0" max="10" step="0.1">
-    </div>
-
-    <div class="resultado" id="resultado">
-      Nota final: -
-    </div>
+    <aside class="card result" aria-live="polite">
+      <h2>Média final</h2>
+      <div class="mf"><span class="big" id="mf">–</span><span class="cap" id="mfcap">preencha suas notas</span></div>
+      <div>
+        <div class="bar"><div class="fill" id="fill" style="width:0"></div><div class="mark"></div></div>
+        <div class="bar-l"><span>0</span><span>6,0</span><span>10</span></div>
+      </div>
+      <div class="status" id="status"></div>
+      <dl class="parts" id="parts"></dl>
+      <p class="note" id="blanks"></p>
+    </aside>
   </div>
 
-  <script>
-    function calcular() {
-      let n1 = parseFloat(document.getElementById("n1").value) || 0;
-      let n2 = parseFloat(document.getElementById("n2").value) || 0;
+  <footer>Ferramenta de apoio para planejamento. A nota oficial é a lançada pelo professor no sistema da Mauá. Provas e Ts vão de 0,5 em 0,5, como no sistema da Mauá (use ▲▼ ou as setas ↑ ↓ do teclado para ajustar); atividades aceitam qualquer valor. Use vírgula ou ponto (ex.: 7,5).</footer>
+</div>
 
-      let media = (n1 + n2) / 2;
+<script>
+(function () {
+  "use strict";
 
-      document.getElementById("resultado").innerText =
-        "Nota final: " + media.toFixed(2);
+  // ---------- Configuração por disciplina (planos de ensino 2026) ----------
+  const top3 = (xs) => { const s = xs.slice().sort((a, b) => b - a); return (s[0] + s[1] + s[2]) / 3; };
+  const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  // Sistema da Mauá: provas e Ts em múltiplos de 0,5 (arredonda para o 0,5 mais próximo; 0,25 sobe).
+  const r05 = (x) => Math.round(x * 2 + 1e-9) / 2;
+  // MP, MT e MF: arredondadas com uma casa decimal; MF usa MP e MT já arredondadas.
+  const r1 = (x) => Math.round(x * 10 + 1e-9) / 10;
+
+  const DISCIPLINAS = {
+    etc411: {
+      code: "ETC411", name: "Fenômenos de Transporte", minimo: 6,
+      formula: "MP = (2P1+2P2+3P3+3P4)/10 · MT = (T1+…+T5)/5 · MF = 0,6·MP + 0,4·MT",
+      provas: [
+        { label: "1º semestre", hint: "PS1 substitui a menor entre P1 e P2, ou as duas", ids: ["P1", "P2"], ps: "PS1" },
+        { label: "2º semestre", hint: "PS2 substitui a menor entre P3 e P4, ou as duas", ids: ["P3", "P4"], ps: "PS2" }
+      ],
+      pesosProvas: { P1: 2, P2: 2, P3: 3, P4: 3 },
+      trabalhos: [
+        { id: "T1", label: "T1", hint: "Peer instruction, 3 maiores de A1–A4", from: ["A1", "A2", "A3", "A4"], rule: "top3" },
+        { id: "T2", label: "T2", hint: "Laboratório do 1º semestre" },
+        { id: "T3", label: "T3", hint: "Peer instruction, 3 maiores de A5–A8", from: ["A5", "A6", "A7", "A8"], rule: "top3" },
+        { id: "T4", label: "T4", hint: "Laboratório do 2º semestre" },
+        { id: "T5", label: "T5", hint: "Média das listas online no Canvas" }
+      ],
+      mt: (T) => (T.T1 + T.T2 + T.T3 + T.T4 + T.T5) / 5,
+      mf: (MP, MT) => 0.6 * MP + 0.4 * MT,
+      alvo: "P4", alvoPS: "PS2"
     }
+  };
 
-    document.getElementById("n1").addEventListener("input", calcular);
-    document.getElementById("n2").addEventListener("input", calcular);
-  </script>
+  let key = "etc411";
+  try { const q = new URLSearchParams(location.search).get("d"); if (q && DISCIPLINAS[q.toLowerCase()]) key = q.toLowerCase(); } catch (e) {}
+  const D = DISCIPLINAS[key];
+  const STORE = "calc-notas-" + key;
+
+  // ---------- Montagem da interface ----------
+  const $ = (id) => document.getElementById(id);
+  $("code").textContent = D.code; $("dname").textContent = D.name; $("formula").textContent = D.formula;
+  document.title = "Calculadora de Notas " + D.code;
+
+  const allIds = [], halfIds = new Set();
+  const psIds = D.provas.map((g) => g.ps);
+  const composites = D.trabalhos.filter((t) => t.from);
+  function field(id, cls, half) {
+    allIds.push(id); if (half) halfIds.add(id);
+    return `<div class="f ${cls || ""}" id="w-${id}"><label for="${id}">${id}</label>` +
+      `<div class="spin"><input id="${id}" inputmode="decimal" autocomplete="off" placeholder=" " aria-label="Nota ${id}">` +
+      `<div class="st"><button type="button" tabindex="-1" data-for="${id}" data-dir="1" aria-label="Aumentar ${id} em 0,5">▲</button>` +
+      `<button type="button" tabindex="-1" data-for="${id}" data-dir="-1" aria-label="Diminuir ${id} em 0,5">▼</button></div></div></div>`;
+  }
+  $("provas").innerHTML = D.provas.map((g) =>
+    `<div class="row"><div class="lbl">${g.label}<small>${g.hint}</small></div><div class="fields">` +
+    g.ids.map((id) => field(id, id === D.alvo ? "target" : "", true)).join("") + field(g.ps, "ps", true) +
+    `</div></div>`).join("");
+  $("trabalhos").innerHTML = D.trabalhos.map((t) =>
+    `<div class="row"><div class="lbl">${t.label}<small>${t.hint}</small></div><div class="fields">` +
+    (t.from ? t.from.map((id) => field(id, "act")).join("") + `<span class="arrow" aria-hidden="true">→</span>` + field(t.id, "tsum", true) +
+      `<span class="mode" id="m-${t.id}">digite as atividades ou o ${t.id} direto</span>` : field(t.id, "", true)) +
+    `</div></div>`).join("");
+
+  // ---------- Leitura ----------
+  const fmt = (x, d = 2) => x == null || !isFinite(x) ? "–" : x.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  let halfError = false;
+  function parse(id) {
+    const el = $(id); const raw = el.value.trim().replace(",", ".");
+    el.classList.remove("err");
+    if (raw === "") return null;
+    const v = Number(raw);
+    let bad = !isFinite(v) || v < 0 || v > 10;
+    if (!bad && halfIds.has(id) && !el.readOnly && Math.abs(v * 2 - Math.round(v * 2)) > 1e-9) { bad = true; halfError = true; }
+    if (bad) el.classList.add("err");
+    return bad ? null : v;
+  }
+
+  // Modo de cada T composto: "auto" (atividades preenchidas → T calculado e travado),
+  // "manual" (T digitado → atividades travadas) ou "vazio".
+  function syncComposites() {
+    composites.forEach((t) => {
+      const tEl = $(t.id);
+      const anyA = t.from.some((id) => $(id).value.trim() !== "");
+      const tManual = tEl.dataset.auto !== "1" && tEl.value.trim() !== "";
+      let mode = anyA ? "auto" : tManual ? "manual" : "vazio";
+      if (mode !== "auto" && tEl.dataset.auto === "1") { tEl.value = ""; delete tEl.dataset.auto; }
+      tEl.readOnly = mode === "auto";
+      $("w-" + t.id).classList.toggle("computed", mode === "auto");
+      t.from.forEach((id) => { $(id).disabled = mode === "manual"; $("w-" + id).classList.toggle("locked", mode === "manual"); });
+      $("m-" + t.id).textContent = mode === "auto" ? `calculado pelas atividades, arredondado para 0,5`
+        : mode === "manual" ? `digitado direto; apague o ${t.id} para usar as atividades`
+        : `digite as atividades ou o ${t.id} direto`;
+      t.mode = mode;
+    });
+  }
+
+  function readAll() {
+    halfError = false;
+    syncComposites();
+    const v = {}; allIds.forEach((id) => (v[id] = parse(id)));
+    const extra = { dropped: [] };
+    composites.forEach((t) => {
+      if (t.mode === "auto") {
+        const xs = t.from.map((id) => (v[id] == null ? 0 : v[id]));
+        const raw = t.rule === "top3" ? top3(xs) : avg(xs);
+        if (t.rule === "top3") extra.dropped.push(t.from[xs.indexOf(Math.min(...xs))]);
+        v[t.id] = r05(raw);
+        $(t.id).value = fmt(v[t.id], 1); $(t.id).dataset.auto = "1"; $(t.id).classList.remove("err");
+      }
+    });
+    return { v, extra };
+  }
+
+  // ---------- Cálculo (campos vazios = 0) ----------
+  function compute(v, over) {
+    const g = (id) => { const x = over && id in over ? over[id] : v[id]; return x == null ? 0 : x; };
+    const eff = {}, subs = [];
+    D.provas.forEach((grp) => {
+      const ps = over && grp.ps in over ? over[grp.ps] : v[grp.ps];
+      grp.ids.forEach((id) => {
+        const p = g(id);
+        if (ps != null && ps > p) { eff[id] = ps; subs.push(id); } else eff[id] = p;
+      });
+    });
+    let num = 0, den = 0;
+    for (const id in D.pesosProvas) { num += D.pesosProvas[id] * eff[id]; den += D.pesosProvas[id]; }
+    const MP = r1(num / den);
+    const T = {}; D.trabalhos.forEach((t) => (T[t.id] = g(t.id)));
+    const MT = r1(D.mt(T));
+    return { MP, MT, MF: r1(D.mf(MP, MT)), subs };
+  }
+
+  // Menor nota (múltiplo de 0,5) no campo "id" que leva MF ao mínimo.
+  function needed(v, id, extra) {
+    for (let k = 0; k <= 20; k++) {
+      const x = k / 2;
+      if (compute(v, Object.assign({}, extra, { [id]: x })).MF >= D.minimo - 1e-9) return x;
+    }
+    return Infinity;
+  }
+
+  // ---------- Atualização ----------
+  function render() {
+    const { v, extra } = readAll();
+    const anyFilled = allIds.some((id) => v[id] != null);
+    const r = compute(v);
+
+    allIds.forEach((id) => $("w-" + id).classList.remove("dropped", "subbed"));
+    if (anyFilled) {
+      extra.dropped.forEach((id) => { if (v[id] != null) $("w-" + id).classList.add("dropped"); });
+      r.subs.forEach((id) => { if (v[id] != null) $("w-" + id).classList.add("subbed"); });
+    }
+    $("halfmsg").hidden = !halfError;
+    document.querySelectorAll(".st button").forEach((b) => { const el = $(b.dataset.for); b.disabled = el.readOnly || el.disabled; });
+
+    $("mpv").textContent = "MP = " + (anyFilled ? fmt(r.MP, 1) : "–");
+    $("mtv").textContent = "MT = " + (anyFilled ? fmt(r.MT, 1) : "–");
+    $("mf").textContent = anyFilled ? fmt(r.MF, 1) : "–";
+    $("fill").style.width = anyFilled ? Math.min(100, r.MF * 10) + "%" : "0";
+    $("fill").style.background = anyFilled && r.MF >= D.minimo - 1e-9 ? "var(--ok)" : "var(--accent)";
+
+    // Campos que ainda contam como zero (P4 e PS ficam de fora: são o que a calculadora projeta).
+    const blanks = [];
+    D.provas.forEach((g) => g.ids.forEach((id) => { if (id !== D.alvo && v[id] == null) blanks.push(id); }));
+    D.trabalhos.forEach((t) => {
+      if (t.from && t.mode === "auto") t.from.forEach((id) => { if (v[id] == null) blanks.push(id); });
+      else if (v[t.id] == null) blanks.push(t.id);
+    });
+    $("mfcap").textContent = !anyFilled ? "preencha suas notas" : v[D.alvo] == null ? "até agora, com " + D.alvo + " = 0" : blanks.length ? "até agora" : "final";
+
+    $("parts").innerHTML = anyFilled
+      ? `<dt>Média de provas (MP)</dt><dd>${fmt(r.MP, 1)}</dd><dt>Média de trabalhos (MT)</dt><dd>${fmt(r.MT, 1)}</dd>` +
+        (r.subs.length ? `<dt>Substituídas pela PS</dt><dd>${r.subs.join(", ")}</dd>` : "")
+      : "";
+    $("blanks").innerHTML = anyFilled && blanks.length
+      ? `<b>Em branco, contando como zero:</b> ${blanks.join(", ")}. Se você já tem essas notas, preencha para o cálculo ficar certo.`
+      : "";
+
+    const st = $("status"); st.className = "status";
+    const min = fmt(D.minimo, 1);
+    if (!anyFilled) {
+      st.innerHTML = `<span class="t">Como usar</span><p>Digite as notas que você já tem. Enquanto a ${D.alvo} estiver vazia, aqui aparece quanto você precisa tirar nela para fechar com média ${min}.</p>`;
+      return;
+    }
+    if (v[D.alvo] == null) {
+      const n = needed(v, D.alvo);
+      if (n === 0) {
+        st.classList.add("ok");
+        st.innerHTML = `<span class="t">Você já atingiu a média ${min}</span>` +
+          `<p>Mesmo sem a ${D.alvo}, sua média já fica em ${fmt(r.MF, 1)}. Parabéns!</p>` +
+          `<p>Mas o conteúdo do 4º bimestre é tão importante quanto o dos outros: ele é base para disciplinas que vêm pela frente e para a sua prática como engenheiro. Continue frequentando as aulas e fazendo as atividades e as provas até o fim do ano.</p>`;
+      } else if (isFinite(n)) {
+        if (n > 8) st.classList.add("warn");
+        st.innerHTML = `<span class="t">Você precisa tirar na ${D.alvo}</span><span class="need">${fmt(n, 1)}</span><p>para fechar com média ${min}.</p>`;
+      } else {
+        const nps = needed(v, D.alvoPS, { [D.alvo]: 10 });
+        st.classList.add("bad");
+        st.innerHTML = isFinite(nps)
+          ? `<span class="t">Só a ${D.alvo} não basta</span><p>Mesmo com 10 na ${D.alvo}, a média não chega a ${min}. Com 10 na ${D.alvo}, você ainda precisaria de <b>${fmt(nps, 1)}</b> na ${D.alvoPS}.</p>`
+          : `<span class="t">Média ${min} fora de alcance</span><p>Com as notas informadas, nem a ${D.alvo} nem a ${D.alvoPS} conseguem levar a média a ${min}. Confira se não há notas faltando e fale com o professor.</p>`;
+      }
+      return;
+    }
+    if (r.MF >= D.minimo - 1e-9) {
+      st.classList.add("ok");
+      st.innerHTML = `<span class="t">Aprovado</span><p>Média ${fmt(r.MF, 1)}.</p>`;
+      return;
+    }
+    if (v[D.alvoPS] == null) {
+      const nps = needed(v, D.alvoPS);
+      st.classList.add(isFinite(nps) ? "warn" : "bad");
+      st.innerHTML = isFinite(nps)
+        ? `<span class="t">Você precisa tirar na ${D.alvoPS}</span><span class="need">${fmt(nps, 1)}</span><p>A ${D.alvoPS} substitui a menor entre P3 e P4 (ou as duas) quando for maior.</p>`
+        : `<span class="t">Média ${min} fora de alcance</span><p>Nem com 10 na ${D.alvoPS} a média chega a ${min}. Fale com o professor.</p>`;
+      return;
+    }
+    st.classList.add("bad");
+    st.innerHTML = `<span class="t">Abaixo de ${min}</span><p>Com todas as provas lançadas, a média ficou em ${fmt(r.MF, 1)}.</p>`;
+  }
+
+  // ---------- Notas salvas no dispositivo ----------
+  // localStorage: funciona dentro do iframe do Canvas (cookies de terceiros costumam ser bloqueados).
+  function save() {
+    try {
+      const o = {};
+      allIds.forEach((id) => { if (!$(id).readOnly) o[id] = $(id).value; });
+      localStorage.setItem(STORE, JSON.stringify(o));
+      $("saved").textContent = allIds.some((id) => o[id]) ? "Suas notas ficam salvas neste navegador." : "";
+    } catch (e) { $("saved").textContent = ""; }
+  }
+  function load() {
+    try { const o = JSON.parse(localStorage.getItem(STORE) || "{}"); allIds.forEach((id) => { if (o[id]) $(id).value = o[id]; }); } catch (e) {}
+  }
+  const EXEMPLO = { P1: "4,5", P2: "3,0", PS1: "5,0", P3: "4,0", A1: "6", A2: "0", A3: "7", A4: "5", T2: "6,5", A5: "7", A6: "5", A7: "6", T4: "7", T5: "5" };
+
+  allIds.forEach((id) => {
+    const el = $(id);
+    el.addEventListener("input", () => { if (el.dataset.auto === "1" && !el.readOnly) delete el.dataset.auto; render(); save(); });
+    // Setas ↑/↓ do teclado em qualquer campo.
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault(); step(id, e.key === "ArrowUp" ? 1 : -1);
+    });
+  });
+  // Botões ▲▼ ao lado de cada campo.
+  document.querySelectorAll(".st button").forEach((b) => b.addEventListener("click", () => step(b.dataset.for, Number(b.dataset.dir))));
+  // Sobe/desce para o próximo múltiplo de 0,5 (7,0 → 7,5; numa atividade, 7,3 → 7,5 ou 7,0). Vazio começa em 0.
+  function step(id, dir) {
+    const el = $(id);
+    if (el.readOnly || el.disabled) return;
+    const raw = el.value.trim().replace(",", ".");
+    const cur = raw === "" || !isFinite(Number(raw)) ? null : Number(raw);
+    let nx;
+    if (cur == null) nx = 0;
+    else if (dir > 0) nx = Math.floor(cur * 2 + 1e-9) / 2 + 0.5;
+    else nx = Math.ceil(cur * 2 - 1e-9) / 2 - 0.5;
+    nx = Math.min(10, Math.max(0, nx));
+    el.value = fmt(nx, 1); delete el.dataset.auto; render(); save();
+  }
+  function setAll(src) {
+    allIds.forEach((id) => { const el = $(id); el.value = src[id] || ""; delete el.dataset.auto; el.readOnly = false; el.disabled = false; });
+    render(); save();
+  }
+  $("ex").addEventListener("click", () => setAll(EXEMPLO));
+  $("clr").addEventListener("click", () => { setAll({}); $(allIds[0]).focus(); });
+
+  load(); render(); save();
+})();
+</script>
+
 </body>
 </html>
