@@ -224,34 +224,10 @@ tr.fold .fbtn { background: var(--navy3); border-color: var(--navy3); color: #ff
         <h3>2 · Média de provas</h3>
         <div class="eq">\[ MP=\frac{2P_1^{*}+2P_2^{*}+3P_3^{*}+3P_4^{*}}{10} \]</div>
       </section>
-      <div class="two">
-        <section>
-          <h3>3 · Exercícios em sala (T1 e T3)</h3>
-          <p>Média das 3 maiores atividades do semestre.</p>
-          <div class="eq">\[ T_1=\frac{\text{soma das 3 maiores de }A_1\ldots A_4}{3} \]</div>
-          <div class="eq">\[ T_3=\frac{\text{soma das 3 maiores de }A_5\ldots A_8}{3} \]</div>
-        </section>
-        <section>
-          <h3>4 · Listas online (T5)</h3>
-          <p>Média simples das quatro listas, uma por bimestre.</p>
-          <div class="eq">\[ T_5=\frac{L_1+L_2+L_3+L_4}{4} \]</div>
-          <p>T2 e T4 são as notas dos laboratórios de cada semestre.</p>
-        </section>
-      </div>
-      <div class="two">
-        <section>
-          <h3>5 · Média de trabalhos</h3>
-          <div class="eq">\[ MT=\frac{T_1+T_2+T_3+T_4+T_5}{5} \]</div>
-        </section>
-        <section>
-          <h3>6 · Média final</h3>
-          <div class="eq">\[ MF=0{,}6\,MP+0{,}4\,MT \]</div>
-          <p>Aprovado se \(MF\ge 6{,}0\).</p>
-        </section>
-      </div>
+      <div id="fx-trab"></div>
       <section>
-        <h3>7 · Arredondamentos e nota necessária</h3>
-        <p>T1, T3 e T5 são arredondados para o múltiplo de 0,5 mais próximo (6,25 vira 6,5; 6,24 vira 6,0). MP, MT e MF são arredondadas com uma casa decimal (5,95 vira 6,0), e a MF é calculada com MP e MT já arredondadas. Provas e notas T são sempre múltiplos de 0,5.</p>
+        <h3><span id="fx-n">7</span> · Arredondamentos e nota necessária</h3>
+        <p>As notas T calculadas pelas notas parciais são arredondadas para o múltiplo de 0,5 mais próximo (6,25 vira 6,5; 6,24 vira 6,0). MP, MT e MF são arredondadas com uma casa decimal (5,95 vira 6,0), e a MF é calculada com MP e MT já arredondadas. Provas e notas T são sempre múltiplos de 0,5.</p>
         <div class="eq">\[ P_4^{\text{nec}}=\min\{\,x\in\{0;\,0{,}5;\,\ldots;\,10\}\;:\;MF(P_4=x)\ge 6{,}0\,\} \]</div>
         <p>A nota necessária na PS2 é calculada do mesmo jeito, trocando \(P_4\) por \(PS_2\).</p>
       </section>
@@ -306,8 +282,72 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
         { id: "T5", label: "T5 · Listas online", from: ["L1", "L2", "L3", "L4"], rule: "avg", parts: "as listas L1–L4", cap: "Listas L1–L4 · média simples" }
       ],
       mt: (T) => (T.T1 + T.T2 + T.T3 + T.T4 + T.T5) / 5,
-      mf: (MP, MT) => 0.6 * MP + 0.4 * MT,
-      alvo: "P4", alvoPS: "PS2"
+      mf: (MP, MT) => 0.6 * MP + 0.4 * MT, mfTxt: "0,6·MP + 0,4·MT",
+      alvo: "P4", alvoPS: "PS2",
+      exemplo: { P1: "4,5", P2: "3,0", PS1: "5,0", P3: "4,0", A1: "6", A2: "0", A3: "7", A4: "5", T2: "6,5", A5: "7", A6: "5", A7: "6", T4: "7,0", L1: "6", L2: "5", L3: "4", L4: "5" },
+      fx: [
+        ["two",
+          ["Exercícios em sala (T1 e T3)", "Média das 3 maiores notas de exercícios do semestre.",
+            "T_1=\\frac{\\text{soma das 3 maiores de }A_1\\ldots A_4}{3}", "T_3=\\frac{\\text{soma das 3 maiores de }A_5\\ldots A_8}{3}"],
+          ["Listas online (T5)", "Média simples das quatro listas, uma por bimestre. T2 e T4 são as notas dos laboratórios de cada semestre.",
+            "T_5=\\frac{L_1+L_2+L_3+L_4}{4}"]],
+        ["two",
+          ["Média de trabalhos", "", "MT=\\frac{T_1+T_2+T_3+T_4+T_5}{5}"],
+          ["Média final", "Aprovado se MF ≥ 6,0.", "MF=0{,}6\\,MP+0{,}4\\,MT"]]
+      ]
+    },
+    etm101: {
+      code: "ETM101", name: "Resistência dos Materiais", ano: 2026, minimo: 6,
+      provas: [
+        { label: "Provas · 1º sem", ids: ["P1", "P2"], ps: "PS1" },
+        { label: "Provas · 2º sem", ids: ["P3", "P4"], ps: "PS2" }
+      ],
+      pesosProvas: { P1: 2, P2: 2, P3: 3, P4: 3 },
+      trabalhos: [
+        { id: "T1", label: "T1 · Exercícios em sala", from: ["A1", "A2", "A3", "A4"], rule: "avg", parts: "os exercícios A1–A4", cap: "Exercícios A1–A4 · média simples" },
+        { id: "T2", label: "T2 · Exercícios em sala", from: ["A5", "A6"], rule: "avg", parts: "os exercícios A5–A6", cap: "Exercícios A5–A6 · média simples" },
+        { id: "T3", label: "T3 · Listas online", from: ["L1", "L2", "L3", "L4"], rule: "avg", parts: "as listas L1–L4", cap: "Listas L1–L4 · média simples" },
+        { id: "T4", label: "T4 · Memorial do redutor", hint: "2º semestre · com ETM302" },
+        { id: "T5", label: "T5 · Projeto extensionista", hint: "2º semestre" }
+      ],
+      mt: (T) => (2 * T.T1 + T.T2 + T.T3 + 3 * T.T4 + 3 * T.T5) / 10,
+      mf: (MP, MT) => 0.6 * MP + 0.4 * MT, mfTxt: "0,6·MP + 0,4·MT",
+      alvo: "P4", alvoPS: "PS2",
+      exemplo: { P1: "5,0", P2: "4,0", PS1: "6,0", P3: "5,0", A1: "7", A2: "6", A3: "8", A4: "5", A5: "7", A6: "6", L1: "8", L2: "7", L3: "6", T4: "7,5", T5: "8,0" },
+      fx: [
+        ["two",
+          ["Exercícios em sala (T1 e T2)", "Média simples dos exercícios de cada semestre.",
+            "T_1=\\frac{A_1+A_2+A_3+A_4}{4}", "T_2=\\frac{A_5+A_6}{2}"],
+          ["Listas online (T3)", "Média simples das quatro listas. T4 é o memorial do redutor (com ETM302) e T5 o projeto extensionista.",
+            "T_3=\\frac{L_1+L_2+L_3+L_4}{4}"]],
+        ["two",
+          ["Média de trabalhos", "Pesos: T1 20%, T2 10%, T3 10%, T4 30% e T5 30%.", "MT=\\frac{2T_1+T_2+T_3+3T_4+3T_5}{10}"],
+          ["Média final", "Aprovado se MF ≥ 6,0.", "MF=0{,}6\\,MP+0{,}4\\,MT"]]
+      ]
+    },
+    ete702: {
+      code: "ETE702", name: "Resistência dos Materiais", ano: 2026, minimo: 6,
+      provas: [
+        { label: "Provas · 1º sem", ids: ["P1", "P2"], ps: "PS1" },
+        { label: "Provas · 2º sem", ids: ["P3", "P4"], ps: "PS2" }
+      ],
+      pesosProvas: { P1: 2, P2: 2, P3: 3, P4: 3 },
+      trabalhos: [
+        { id: "T1", label: "T1 · Exercícios em sala", from: ["A1", "A2", "A3", "A4"], rule: "avg", parts: "os exercícios A1–A4", cap: "Exercícios A1–A4 · média simples" },
+        { id: "T2", label: "T2 · Exercícios em sala", from: ["A5", "A6", "A7", "A8"], rule: "avg", parts: "os exercícios A5–A8", cap: "Exercícios A5–A8 · média simples" }
+      ],
+      mt: (T) => (T.T1 + T.T2) / 2,
+      mf: (MP, MT) => 0.5 * MP + 0.5 * MT, mfTxt: "0,5·MP + 0,5·MT",
+      alvo: "P4", alvoPS: "PS2",
+      exemplo: { P1: "6,0", P2: "5,0", P3: "5,0", A1: "8", A2: "7", A3: "9", A4: "6", A5: "8", A6: "7", A7: "9" },
+      fx: [
+        ["one",
+          ["Exercícios em sala (T1 e T2)", "Média simples dos exercícios de cada semestre.",
+            "T_1=\\frac{A_1+A_2+A_3+A_4}{4}\\qquad T_2=\\frac{A_5+A_6+A_7+A_8}{4}"]],
+        ["two",
+          ["Média de trabalhos", "", "MT=\\frac{T_1+T_2}{2}"],
+          ["Média final", "Aprovado se MF ≥ 6,0.", "MF=0{,}5\\,MP+0{,}5\\,MT"]]
+      ]
     }
   };
   let key = "etc411";
@@ -319,6 +359,15 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
   const $ = (id) => document.getElementById(id);
   $("kicker").textContent = D.code + " · " + D.ano; $("dname").textContent = D.name;
   document.title = "Calculadora de Notas " + D.code;
+
+  // Fórmulas dos trabalhos e médias (aba "Como é calculado"), numeradas a partir do 3
+  (function () {
+    let n = 3, out = "";
+    const sec = (c) => { const [t, txt, ...eqs] = c; return `<section><h3>${n++} · ${t}</h3>` + (txt ? `<p>${txt}</p>` : "") + eqs.map((e) => `<div class="eq">\\[ ${e} \\]</div>`).join("") + `</section>`; };
+    D.fx.forEach(([kind, ...cards]) => { const h = cards.map(sec).join(""); out += kind === "two" ? `<div class="two">${h}</div>` : h; });
+    $("fx-trab").outerHTML = out;
+    $("fx-n").textContent = n;
+  })();
 
   const allIds = [], halfIds = new Set();
   const comps = D.trabalhos.filter((t) => t.from);
@@ -461,7 +510,7 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
     $("kv").innerHTML = any
       ? `<dt>MP (provas)</dt><dd>${fmt(r.MP)}</dd><dt>MT (trabalhos)</dt><dd>${fmt(r.MT)}</dd>` +
         (r.subs.length ? `<dt>Substituídas pela PS</dt><dd>${r.subs.join(", ")}</dd>` : "")
-      : `<dt>Fórmula</dt><dd>0,6·MP + 0,4·MT</dd>`;
+      : `<dt>Fórmula</dt><dd>${D.mfTxt}</dd>`;
 
     const nd = $("need"); nd.className = "need";
     if (!any) {
@@ -600,7 +649,7 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
   function load() {
     try { const o = JSON.parse(localStorage.getItem(STORE) || "{}"); allIds.forEach((id) => { if (o[id]) $(id).value = o[id]; }); } catch (e) {}
   }
-  const EXEMPLO = { P1: "4,5", P2: "3,0", PS1: "5,0", P3: "4,0", A1: "6", A2: "0", A3: "7", A4: "5", T2: "6,5", A5: "7", A6: "5", A7: "6", T4: "7,0", L1: "6", L2: "5", L3: "4", L4: "5" };
+  const EXEMPLO = D.exemplo;
   function setAll(src) {
     allIds.forEach((id) => { const el = $(id); el.value = src[id] || ""; delete el.dataset.auto; el.readOnly = false; el.disabled = false; });
     render(); save();
