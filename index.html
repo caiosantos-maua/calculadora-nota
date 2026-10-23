@@ -6,296 +6,331 @@
 <title>Calculadora de Notas ETC411</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: inputs à esquerda (provas, trabalhos), painel de resultado fixo à direita; empilha no celular com o resultado no topo.
-   Tema único claro, de propósito: a página vive dentro do Canvas, que é claro. */
+/* Layout: painel compacto. Coluna escura à esquerda com o resultado (medidor + nota necessária);
+   à direita, abas "Notas" (tabela compacta) e "Como é calculado" (fórmulas). Cabe numa tela, sem depender de rolagem.
+   Tema único claro, de propósito: a página vive dentro do Canvas. */
 :root {
   color-scheme: light;
-  --bg: #f3f6f7;
-  --surface: #ffffff;
-  --ink: #16232b;
-  --muted: #5a6971;
-  --line: #d6dee2;
-  --accent: #0d5874;
-  --accent-soft: #e3eff4;
-  --ok: #1d7347;
-  --ok-soft: #e2f3ea;
-  --warn: #9a5b00;
-  --warn-soft: #fbf0dc;
-  --bad: #a8241c;
-  --bad-soft: #fbe5e3;
-  --font-body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-num: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --navy: #12233a; --navy2: #1d3654; --navy3: #2a4669;
+  --gold: #f2b544; --gold-ink: #a8700a; --sky: #8fb8e8; --mist: #c9d6e6;
+  --bg: #f6f7f9; --card: #ffffff; --ink: #13202c; --muted: #66727d; --line: #dde2e7;
+  --ok: #3ccf8e; --ok-ink: #1d7a4f; --bad: #ff8a7a; --bad-ink: #b3261e; --err-bg: #fdecea;
+  --font: "Sora", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
 }
 * { box-sizing: border-box; }
-body {
-  background: var(--bg); color: var(--ink);
-  font-family: var(--font-body); font-size: 15px; line-height: 1.45;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 18px 28px;
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; line-height: 1.45;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); padding-block: 12px 18px; margin: 0; }
+.app { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: 290px minmax(0, 1fr);
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+@media (max-width: 780px) { .app { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Painel lateral ---------- */
+.side { background: var(--navy); color: #fff; padding: 20px 20px 18px; display: grid; gap: 14px; align-content: start; }
+.side .k { font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--sky); }
+.side h1 { margin: 2px 0 0; font-size: 1.02rem; font-weight: 600; }
+.gauge { width: 100%; max-width: 236px; justify-self: center; display: block; }
+.gauge text { font-family: var(--mono); }
+#arc { transition: stroke-dasharray .3s ease, stroke .3s ease; }
+.need { background: var(--navy2); border-radius: 10px; padding: 13px 14px; display: grid; gap: 3px; border-left: 3px solid var(--sky); }
+.need .l { font-size: 0.8rem; color: var(--sky); }
+.need .v { font: 700 2.3rem/1.05 var(--mono); color: var(--gold); }
+.need p { margin: 0; font-size: 0.8rem; color: var(--mist); }
+.need p + p { margin-top: 4px; }
+.need.gold { border-left-color: var(--gold); }
+.need.ok { border-left-color: var(--ok); } .need.ok .l { color: var(--ok); }
+.need.bad { border-left-color: var(--bad); } .need.bad .l { color: var(--bad); }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; font-size: 0.8rem; color: var(--mist); margin: 0; }
+.kv dd { margin: 0; font-family: var(--mono); color: #fff; text-align: right; }
+
+/* ---------- Área principal ---------- */
+.main { padding: 14px 18px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
+.tabs { display: flex; gap: 4px; background: #e9edf1; padding: 3px; border-radius: 8px; }
+.tabs button { font: 600 0.82rem var(--font); border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px #13202c22; }
+.acts { display: flex; gap: 6px; }
+.btn { font: 600 0.78rem var(--font); border: 1px solid var(--line); background: var(--card); color: var(--ink); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.btn:hover { border-color: var(--navy3); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--navy3); outline-offset: 1px; }
+
+.tbl { overflow-x: auto; }
+table { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
+th { text-align: left; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 2px 6px; }
+th.r { text-align: right; }
+td { background: var(--card); padding: 7px 6px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); vertical-align: middle; }
+td.it { border-left: 1px solid var(--line); border-radius: 8px 0 0 8px; padding-left: 12px; width: 128px; }
+td.it b { display: block; font-size: 0.84rem; font-weight: 600; white-space: nowrap; }
+td.it small { display: block; font-size: 0.68rem; color: var(--muted); line-height: 1.25; }
+td.va { border-right: 1px solid var(--line); border-radius: 0 8px 8px 0; text-align: right; padding-right: 12px; font: 700 0.9rem var(--mono); white-space: nowrap; width: 76px; }
+td.va small { display: block; font: 500 0.64rem var(--font); color: var(--muted); }
+.cells { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.arrow { color: var(--muted); font-size: 0.8rem; padding: 0 1px; }
+
+/* Campo de nota: rótulo à esquerda, valor, setinhas discretas dentro do quadro */
+.c { display: grid; grid-template-columns: auto 64px; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--card); }
+.c > label { font: 500 0.66rem var(--mono); color: var(--muted); padding: 0 5px; background: var(--bg); display: grid; place-items: center; min-width: 26px; }
+.c .in { position: relative; }
+.c input { width: 100%; height: 100%; border: 0; background: transparent; font: 700 0.86rem var(--mono); color: var(--ink); text-align: center; padding: 6px 16px 6px 4px; font-variant-numeric: tabular-nums; }
+.c input:focus { outline: none; }
+.c:focus-within { border-color: var(--navy3); box-shadow: 0 0 0 2px #2a466922; }
+.c .sp { position: absolute; right: 2px; top: 2px; bottom: 2px; width: 13px; display: grid; grid-template-rows: 1fr 1fr; opacity: 0.45; transition: opacity .15s; }
+.c:hover .sp, .c:focus-within .sp { opacity: 1; }
+.c .sp button { border: 0; background: transparent; padding: 0; margin: 0; color: var(--muted); font-size: 7px; line-height: 1; cursor: pointer; border-radius: 3px; }
+.c .sp button:hover:not(:disabled) { background: var(--bg); color: var(--ink); }
+.c .sp button:disabled { visibility: hidden; }
+.c.ps { border-style: dashed; }
+.c.x input { color: var(--muted); text-decoration: line-through; font-weight: 500; }
+.c.err { border-color: var(--bad-ink); } .c.err input { background: var(--err-bg); color: var(--bad-ink); }
+.c.goal { border-color: var(--gold); box-shadow: 0 0 0 2px #f2b54430; }
+.c.goal input::placeholder { color: var(--gold-ink); font-weight: 700; font-size: 0.72rem; opacity: 1; }
+.c.auto { background: #eef3f8; border-color: transparent; } .c.auto input { cursor: default; }
+.c.lock { background: var(--bg); } .c.lock input { color: var(--muted); cursor: not-allowed; -webkit-text-fill-color: var(--muted); }
+
+.msg { margin: 0; font-size: 0.74rem; color: var(--muted); }
+.msg.e { color: var(--bad-ink); }
+
+/* ---------- Aba de fórmulas ---------- */
+.fx { display: grid; gap: 10px; }
+.fx section { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; display: grid; gap: 6px; min-width: 0; }
+.fx h3 { margin: 0; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.fx p { margin: 0; font-size: 0.8rem; color: var(--muted); }
+.fx .eq { overflow-x: auto; overflow-y: hidden; font-size: 0.95rem; padding: 2px 0; }
+.fx .two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 640px) { .fx .two { grid-template-columns: minmax(0, 1fr); } }
+
+footer { max-width: 1080px; margin: 10px auto 0; font-size: 0.72rem; color: var(--muted); display: grid; gap: 3px; }
+footer p { margin: 0; }
+@media (max-width: 640px) {
+  table, tbody { display: block; } thead { display: none; }
+  table { border-spacing: 0; } tbody { display: grid; gap: 6px; }
+  tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  td { border: 0 !important; background: transparent; border-radius: 0 !important; }
+  td.it { width: auto; padding: 8px 10px 2px; }
+  td.va { width: auto; padding: 8px 10px 2px; }
+  tr > td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; padding: 4px 10px 10px; }
 }
-.wrap { max-width: 1040px; margin: 0 auto; display: grid; gap: 16px; }
-header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
-h1 { font-size: 1.35rem; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
-h1 .code { font-family: var(--font-num); font-size: 0.85em; color: var(--accent); margin-right: 6px; }
-.formula { font-family: var(--font-num); font-size: 0.8rem; color: var(--muted); }
-.grid { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 16px; align-items: start; }
-@media (max-width: 800px) {
-  .grid { grid-template-columns: minmax(0, 1fr); }
-  .result { order: -1; position: static !important; }
-}
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px 16px; display: grid; gap: 12px; min-width: 0; }
-.card h2 { margin: 0; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
-.card h2 .val { font-family: var(--font-num); letter-spacing: 0; text-transform: none; color: var(--ink); font-size: 0.85rem; }
-.inputs { display: grid; gap: 16px; min-width: 0; }
-.row { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 10px; align-items: center; padding-top: 10px; border-top: 1px solid var(--line); }
-.row:first-of-type { border-top: 0; padding-top: 0; }
-.row .lbl { font-weight: 600; font-size: 0.92rem; }
-.row .lbl small { display: block; font-weight: 400; color: var(--muted); font-size: 0.78rem; line-height: 1.25; }
-.fields { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
-.f { display: grid; gap: 2px; width: 84px; }
-.f label { font-size: 0.72rem; color: var(--muted); font-family: var(--font-num); }
-.f input {
-  width: 100%; font: 600 1rem var(--font-num); color: var(--ink); text-align: center;
-  border: 1px solid var(--line); border-radius: 6px; padding: 6px 4px; background: var(--surface);
-  font-variant-numeric: tabular-nums;
-}
-.f input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent); }
-.f input.err { border-color: var(--bad); background: var(--bad-soft); }
-.f.ps input { border-style: dashed; }
-.spin { display: flex; gap: 2px; align-items: stretch; }
-.spin input { min-width: 0; flex: 1; }
-.st { display: grid; grid-template-rows: 1fr 1fr; gap: 2px; width: 18px; }
-.st button { padding: 0; border-radius: 4px; font-size: 0.5rem; line-height: 1; color: var(--muted); background: var(--bg); border: 1px solid var(--line); }
-.st button:hover:not(:disabled) { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
-.st button:disabled { opacity: 0.35; cursor: default; }
-.f.dropped input { color: var(--muted); text-decoration: line-through; }
-.f.subbed input { color: var(--muted); text-decoration: line-through; }
-.f.target input:placeholder-shown { border-color: var(--accent); background: var(--accent-soft); }
-.calc { margin-left: auto; font-family: var(--font-num); font-size: 0.85rem; color: var(--muted); white-space: nowrap; align-self: center; }
-.calc b { color: var(--ink); font-weight: 600; }
-@media (max-width: 520px) {
-  .row { grid-template-columns: minmax(0, 1fr); gap: 6px; }
-  .calc { margin-left: 0; width: 100%; }
-}
-.result { position: sticky; top: 12px; display: grid; gap: 12px; }
-.mf { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.mf .big { font: 600 2.6rem/1 var(--font-num); font-variant-numeric: tabular-nums; }
-.mf .cap { font-size: 0.8rem; color: var(--muted); }
-.bar { position: relative; height: 10px; background: var(--line); border-radius: 5px; overflow: visible; }
-.bar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; background: var(--accent); transition: width .25s ease; }
-.bar .mark { position: absolute; left: 60%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); }
-.bar-l { display: flex; justify-content: space-between; font: 500 0.7rem var(--font-num); color: var(--muted); margin-top: 2px; }
-.bar-l span:nth-child(2) { position: relative; left: 10%; }
-.status { border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; background: var(--accent-soft); }
-.status .t { font-weight: 700; font-size: 1.02rem; }
-.status .need { font: 600 2rem/1.1 var(--font-num); }
-.status p { margin: 0; font-size: 0.88rem; }
-.status.ok { background: var(--ok-soft); color: var(--ok); }
-.status.warn { background: var(--warn-soft); color: var(--warn); }
-.status.bad { background: var(--bad-soft); color: var(--bad); }
-.status.ok p, .status.warn p, .status.bad p { color: var(--ink); }
-.parts { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 0.85rem; margin: 0; }
-.parts dt { color: var(--muted); }
-.parts dd { margin: 0; text-align: right; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
-.note { font-size: 0.8rem; color: var(--muted); margin: 0; }
-.note b { color: var(--warn); font-weight: 600; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
-button {
-  font: 600 0.85rem var(--font-body); border-radius: 6px; padding: 7px 12px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
-}
-button:hover { border-color: var(--accent); color: var(--accent); }
-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-footer { font-size: 0.78rem; color: var(--muted); }
-.arrow { color: var(--muted); align-self: center; padding-bottom: 6px; }
-.mode { flex-basis: 100%; font-size: 0.76rem; color: var(--muted); }
-.f.computed input { background: var(--accent-soft); border-color: transparent; cursor: default; }
-.f.locked input { background: var(--bg); color: var(--muted); cursor: not-allowed; }
-.f input:disabled { opacity: 1; -webkit-text-fill-color: var(--muted); }
-.hint { margin: 0; font-size: 0.82rem; color: var(--bad); }
-.saved { font-size: 0.8rem; color: var(--muted); align-self: center; }
-@media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+@media (prefers-reduced-motion: reduce) { #arc { transition: none; } }
 </style>
 
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1><span class="code" id="code">ETC411</span><span id="dname">Fenômenos de Transporte</span></h1>
-    <span class="formula" id="formula"></span>
-  </header>
+<div class="app">
+  <aside class="side" aria-live="polite">
+    <div><div class="k" id="kicker">ETC411 · 2026</div><h1 id="dname">Fenômenos de Transporte</h1></div>
+    <svg class="gauge" viewBox="0 0 200 120" role="img" aria-labelledby="gt">
+      <title id="gt">Média final</title>
+      <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#2a4669" stroke-width="16" stroke-linecap="round"/>
+      <path id="arc" d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="#8fb8e8" stroke-width="16" stroke-linecap="round" stroke-dasharray="0 400"/>
+      <line x1="121.6" y1="33.4" x2="128.4" y2="12.5" stroke="#f2b544" stroke-width="3"/>
+      <text x="134" y="12" fill="#f2b544" font-size="10">6,0</text>
+      <text x="22" y="116" fill="#8fb8e8" font-size="8" text-anchor="middle">0</text>
+      <text x="178" y="116" fill="#8fb8e8" font-size="8" text-anchor="middle">10</text>
+      <text id="mf" x="100" y="90" fill="#ffffff" font-size="34" font-weight="700" text-anchor="middle">–</text>
+      <text id="mfcap" x="100" y="110" fill="#8fb8e8" font-size="8.5" text-anchor="middle">média final</text>
+    </svg>
+    <div class="need" id="need"></div>
+    <dl class="kv" id="kv"></dl>
+  </aside>
 
-  <div class="grid">
-    <div class="inputs">
-      <section class="card" aria-labelledby="hp">
-        <h2 id="hp">Provas <span class="val" id="mpv">MP = –</span></h2>
-        <div id="provas"></div>
-      </section>
-      <section class="card" aria-labelledby="ht">
-        <h2 id="ht">Trabalhos <span class="val" id="mtv">MT = –</span></h2>
-        <div id="trabalhos"></div>
-      </section>
-      <div class="actions">
-        <button type="button" id="ex">Ver um exemplo</button>
-        <button type="button" id="clr">Limpar tudo</button>
-        <span class="saved" id="saved"></span>
+  <div class="main">
+    <div class="bar">
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-notas" aria-selected="true" aria-controls="pane-notas">Suas notas</button>
+        <button role="tab" id="tab-fx" aria-selected="false" aria-controls="pane-fx">Como é calculado</button>
       </div>
-      <p class="hint" id="halfmsg" hidden>Provas e notas de trabalho (T) só aceitam múltiplos de 0,5, como 7,0 ou 7,5. Os campos em vermelho não entram no cálculo.</p>
+      <div class="acts">
+        <button type="button" class="btn" id="ex">Ver exemplo</button>
+        <button type="button" class="btn" id="clr">Limpar</button>
+      </div>
     </div>
 
-    <aside class="card result" aria-live="polite">
-      <h2>Média final</h2>
-      <div class="mf"><span class="big" id="mf">–</span><span class="cap" id="mfcap">preencha suas notas</span></div>
-      <div>
-        <div class="bar"><div class="fill" id="fill" style="width:0"></div><div class="mark"></div></div>
-        <div class="bar-l"><span>0</span><span>6,0</span><span>10</span></div>
+    <div id="pane-notas" role="tabpanel" aria-labelledby="tab-notas">
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Item</th><th>Notas</th><th class="r">Vale</th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
       </div>
-      <div class="status" id="status"></div>
-      <dl class="parts" id="parts"></dl>
-      <p class="note" id="blanks"></p>
-    </aside>
-  </div>
+      <p class="msg" id="blanks"></p>
+      <p class="msg e" id="halfmsg" hidden>Provas e notas T só aceitam múltiplos de 0,5 (ex.: 7,0 ou 7,5). Campos em vermelho não entram no cálculo.</p>
+    </div>
 
-  <footer>Ferramenta de apoio para planejamento. A nota oficial é a lançada pelo professor no sistema da Mauá. Provas e Ts vão de 0,5 em 0,5, como no sistema da Mauá (use ▲▼ ou as setas ↑ ↓ do teclado para ajustar); atividades aceitam qualquer valor. Use vírgula ou ponto (ex.: 7,5).</footer>
+    <div id="pane-fx" class="fx" role="tabpanel" aria-labelledby="tab-fx" hidden>
+      <section>
+        <h3>1 · Provas substitutivas</h3>
+        <p>A PS1 substitui a menor nota entre P1 e P2, ou as duas, quando for maior. A PS2 faz o mesmo com P3 e P4.</p>
+        <div class="eq">\[ \begin{aligned} P_1^{*}&=\max(P_1,\,PS_1) &\qquad P_2^{*}&=\max(P_2,\,PS_1)\\ P_3^{*}&=\max(P_3,\,PS_2) &\qquad P_4^{*}&=\max(P_4,\,PS_2) \end{aligned} \]</div>
+      </section>
+      <section>
+        <h3>2 · Média de provas</h3>
+        <div class="eq">\[ MP=\frac{2P_1^{*}+2P_2^{*}+3P_3^{*}+3P_4^{*}}{10} \]</div>
+      </section>
+      <div class="two">
+        <section>
+          <h3>3 · Peer instruction (T1 e T3)</h3>
+          <p>Média das 3 maiores atividades do semestre.</p>
+          <div class="eq">\[ T_1=\frac{\text{soma das 3 maiores de }A_1\ldots A_4}{3} \]</div>
+          <div class="eq">\[ T_3=\frac{\text{soma das 3 maiores de }A_5\ldots A_8}{3} \]</div>
+        </section>
+        <section>
+          <h3>4 · Listas online (T5)</h3>
+          <p>Média simples das quatro listas, uma por bimestre.</p>
+          <div class="eq">\[ T_5=\frac{L_1+L_2+L_3+L_4}{4} \]</div>
+          <p>T2 e T4 são as notas dos laboratórios de cada semestre.</p>
+        </section>
+      </div>
+      <section>
+        <h3>5 · Média de trabalhos e média final</h3>
+        <div class="eq">\[ MT=\frac{T_1+T_2+T_3+T_4+T_5}{5} \]</div>
+        <div class="eq">\[ MF=0{,}6\,MP+0{,}4\,MT\qquad \text{aprovado se } MF\ge 6{,}0 \]</div>
+      </section>
+      <section>
+        <h3>6 · Arredondamentos e nota necessária</h3>
+        <p>T1, T3 e T5 são arredondados para o múltiplo de 0,5 mais próximo (6,25 vira 6,5; 6,24 vira 6,0). MP, MT e MF são arredondadas com uma casa decimal (5,95 vira 6,0), e a MF é calculada com MP e MT já arredondadas. Provas e notas T são sempre múltiplos de 0,5.</p>
+        <div class="eq">\[ P_4^{\text{nec}}=\min\{\,x\in\{0;\,0{,}5;\,\ldots;\,10\}\;:\;MF(P_4=x)\ge 6{,}0\,\} \]</div>
+        <p>A nota necessária na PS2 é calculada do mesmo jeito, trocando \(P_4\) por \(PS_2\).</p>
+      </section>
+    </div>
+  </div>
 </div>
 
+<footer>
+  <p><b>Ferramenta de apoio para planejamento.</b> A nota oficial é a lançada pelo professor no sistema da Mauá; em caso de diferença, vale a do sistema.</p>
+  <p>Campos em branco contam como zero. Atividades e listas aceitam qualquer valor; provas e notas T vão de 0,5 em 0,5. Use as setinhas ou ↑ ↓ do teclado para ajustar.</p>
+  <p>Suas notas ficam salvas só neste navegador e não são enviadas a ninguém.</p>
+</footer>
+
+<script>
+window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "global" } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
 <script>
 (function () {
   "use strict";
 
-  // ---------- Configuração por disciplina (planos de ensino 2026) ----------
+  // ---------- Regras de arredondamento (sistema da Mauá) ----------
+  const r05 = (x) => Math.round(x * 2 + 1e-9) / 2;   // provas e Ts: múltiplo de 0,5 mais próximo
+  const r1 = (x) => Math.round(x * 10 + 1e-9) / 10;  // MP, MT e MF: uma casa decimal
   const top3 = (xs) => { const s = xs.slice().sort((a, b) => b - a); return (s[0] + s[1] + s[2]) / 3; };
   const avg = (xs) => xs.reduce((a, b) => a + b, 0) / xs.length;
-  // Sistema da Mauá: provas e Ts em múltiplos de 0,5 (arredonda para o 0,5 mais próximo; 0,25 sobe).
-  const r05 = (x) => Math.round(x * 2 + 1e-9) / 2;
-  // MP, MT e MF: arredondadas com uma casa decimal; MF usa MP e MT já arredondadas.
-  const r1 = (x) => Math.round(x * 10 + 1e-9) / 10;
 
+  // ---------- Configuração por disciplina (plano de ensino 2026) ----------
   const DISCIPLINAS = {
     etc411: {
-      code: "ETC411", name: "Fenômenos de Transporte", minimo: 6,
-      formula: "MP = (2P1+2P2+3P3+3P4)/10 · MT = (T1+…+T5)/5 · MF = 0,6·MP + 0,4·MT",
+      code: "ETC411", name: "Fenômenos de Transporte", ano: 2026, minimo: 6,
       provas: [
-        { label: "1º semestre", hint: "PS1 substitui a menor entre P1 e P2, ou as duas", ids: ["P1", "P2"], ps: "PS1" },
-        { label: "2º semestre", hint: "PS2 substitui a menor entre P3 e P4, ou as duas", ids: ["P3", "P4"], ps: "PS2" }
+        { label: "Provas · 1º sem", ids: ["P1", "P2"], ps: "PS1" },
+        { label: "Provas · 2º sem", ids: ["P3", "P4"], ps: "PS2" }
       ],
       pesosProvas: { P1: 2, P2: 2, P3: 3, P4: 3 },
       trabalhos: [
-        { id: "T1", label: "T1", hint: "Peer instruction, 3 maiores de A1–A4", from: ["A1", "A2", "A3", "A4"], rule: "top3" },
-        { id: "T2", label: "T2", hint: "Laboratório do 1º semestre" },
-        { id: "T3", label: "T3", hint: "Peer instruction, 3 maiores de A5–A8", from: ["A5", "A6", "A7", "A8"], rule: "top3" },
-        { id: "T4", label: "T4", hint: "Laboratório do 2º semestre" },
-        { id: "T5", label: "T5", hint: "Média das listas online no Canvas" }
+        { id: "T1", label: "T1 · Peer instr.", from: ["A1", "A2", "A3", "A4"], rule: "top3", what: "atividades" },
+        { id: "T2", label: "T2 · Laboratório", hint: "1º semestre" },
+        { id: "T3", label: "T3 · Peer instr.", from: ["A5", "A6", "A7", "A8"], rule: "top3", what: "atividades" },
+        { id: "T4", label: "T4 · Laboratório", hint: "2º semestre" },
+        { id: "T5", label: "T5 · Listas online", from: ["L1", "L2", "L3", "L4"], rule: "avg", what: "listas" }
       ],
       mt: (T) => (T.T1 + T.T2 + T.T3 + T.T4 + T.T5) / 5,
       mf: (MP, MT) => 0.6 * MP + 0.4 * MT,
       alvo: "P4", alvoPS: "PS2"
     }
   };
-
   let key = "etc411";
   try { const q = new URLSearchParams(location.search).get("d"); if (q && DISCIPLINAS[q.toLowerCase()]) key = q.toLowerCase(); } catch (e) {}
   const D = DISCIPLINAS[key];
   const STORE = "calc-notas-" + key;
 
-  // ---------- Montagem da interface ----------
+  // ---------- Montagem ----------
   const $ = (id) => document.getElementById(id);
-  $("code").textContent = D.code; $("dname").textContent = D.name; $("formula").textContent = D.formula;
+  $("kicker").textContent = D.code + " · " + D.ano; $("dname").textContent = D.name;
   document.title = "Calculadora de Notas " + D.code;
 
   const allIds = [], halfIds = new Set();
-  const psIds = D.provas.map((g) => g.ps);
-  const composites = D.trabalhos.filter((t) => t.from);
-  function field(id, cls, half) {
+  const comps = D.trabalhos.filter((t) => t.from);
+  function cell(id, cls, half) {
     allIds.push(id); if (half) halfIds.add(id);
-    return `<div class="f ${cls || ""}" id="w-${id}"><label for="${id}">${id}</label>` +
-      `<div class="spin"><input id="${id}" inputmode="decimal" autocomplete="off" placeholder=" " aria-label="Nota ${id}">` +
-      `<div class="st"><button type="button" tabindex="-1" data-for="${id}" data-dir="1" aria-label="Aumentar ${id} em 0,5">▲</button>` +
-      `<button type="button" tabindex="-1" data-for="${id}" data-dir="-1" aria-label="Diminuir ${id} em 0,5">▼</button></div></div></div>`;
+    return `<div class="c ${cls || ""}" id="w-${id}"><label for="${id}">${id}</label><div class="in">` +
+      `<input id="${id}" inputmode="decimal" autocomplete="off" aria-label="Nota ${id}">` +
+      `<div class="sp"><button type="button" tabindex="-1" data-for="${id}" data-dir="1" aria-label="Aumentar ${id}">▲</button>` +
+      `<button type="button" tabindex="-1" data-for="${id}" data-dir="-1" aria-label="Diminuir ${id}">▼</button></div></div></div>`;
   }
-  $("provas").innerHTML = D.provas.map((g) =>
-    `<div class="row"><div class="lbl">${g.label}<small>${g.hint}</small></div><div class="fields">` +
-    g.ids.map((id) => field(id, id === D.alvo ? "target" : "", true)).join("") + field(g.ps, "ps", true) +
-    `</div></div>`).join("");
-  $("trabalhos").innerHTML = D.trabalhos.map((t) =>
-    `<div class="row"><div class="lbl">${t.label}<small>${t.hint}</small></div><div class="fields">` +
-    (t.from ? t.from.map((id) => field(id, "act")).join("") + `<span class="arrow" aria-hidden="true">→</span>` + field(t.id, "tsum", true) +
-      `<span class="mode" id="m-${t.id}">digite as atividades ou o ${t.id} direto</span>` : field(t.id, "", true)) +
-    `</div></div>`).join("");
+  let html = "";
+  D.provas.forEach((g, i) => {
+    html += `<tr><td class="it"><b>${g.label}</b><small>${g.ps} substitui a menor</small></td><td><div class="cells">` +
+      g.ids.map((id) => cell(id, id === D.alvo ? "goal" : "", true)).join("") + cell(g.ps, "ps", true) +
+      `</div></td><td class="va" id="v-prov${i}">–</td></tr>`;
+  });
+  D.trabalhos.forEach((t) => {
+    html += `<tr><td class="it"><b>${t.label}</b><small id="m-${t.id}">${t.hint || ""}</small></td><td><div class="cells">` +
+      (t.from ? t.from.map((id) => cell(id)).join("") + `<span class="arrow" aria-hidden="true">→</span>` + cell(t.id, "", true) : cell(t.id, "", true)) +
+      `</div></td><td class="va" id="v-${t.id}">–</td></tr>`;
+  });
+  $("rows").innerHTML = html;
 
   // ---------- Leitura ----------
-  const fmt = (x, d = 2) => x == null || !isFinite(x) ? "–" : x.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmt = (x, d = 1) => x == null || !isFinite(x) ? "–" : x.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
   let halfError = false;
   function parse(id) {
-    const el = $(id); const raw = el.value.trim().replace(",", ".");
-    el.classList.remove("err");
+    const el = $(id), w = $("w-" + id);
+    const raw = el.value.trim().replace(",", ".");
+    w.classList.remove("err");
     if (raw === "") return null;
     const v = Number(raw);
     let bad = !isFinite(v) || v < 0 || v > 10;
     if (!bad && halfIds.has(id) && !el.readOnly && Math.abs(v * 2 - Math.round(v * 2)) > 1e-9) { bad = true; halfError = true; }
-    if (bad) el.classList.add("err");
+    if (bad) w.classList.add("err");
     return bad ? null : v;
   }
 
-  // Modo de cada T composto: "auto" (atividades preenchidas → T calculado e travado),
-  // "manual" (T digitado → atividades travadas) ou "vazio".
-  function syncComposites() {
-    composites.forEach((t) => {
+  // T composto: "auto" (partes preenchidas → T calculado e travado), "manual" (T digitado → partes travadas) ou "vazio".
+  function syncComps() {
+    comps.forEach((t) => {
       const tEl = $(t.id);
-      const anyA = t.from.some((id) => $(id).value.trim() !== "");
+      const anyPart = t.from.some((id) => $(id).value.trim() !== "");
       const tManual = tEl.dataset.auto !== "1" && tEl.value.trim() !== "";
-      let mode = anyA ? "auto" : tManual ? "manual" : "vazio";
+      const mode = anyPart ? "auto" : tManual ? "manual" : "vazio";
       if (mode !== "auto" && tEl.dataset.auto === "1") { tEl.value = ""; delete tEl.dataset.auto; }
       tEl.readOnly = mode === "auto";
-      $("w-" + t.id).classList.toggle("computed", mode === "auto");
-      t.from.forEach((id) => { $(id).disabled = mode === "manual"; $("w-" + id).classList.toggle("locked", mode === "manual"); });
-      $("m-" + t.id).textContent = mode === "auto" ? `calculado pelas atividades, arredondado para 0,5`
-        : mode === "manual" ? `digitado direto; apague o ${t.id} para usar as atividades`
-        : `digite as atividades ou o ${t.id} direto`;
+      $("w-" + t.id).classList.toggle("auto", mode === "auto");
+      t.from.forEach((id) => { $(id).disabled = mode === "manual"; $("w-" + id).classList.toggle("lock", mode === "manual"); });
+      $("m-" + t.id).textContent = mode === "auto" ? `calculado pelas ${t.what}` : mode === "manual" ? `${t.id} digitado; apague para usar as ${t.what}` : `${t.what} ou ${t.id} direto`;
       t.mode = mode;
     });
   }
-
   function readAll() {
     halfError = false;
-    syncComposites();
+    syncComps();
     const v = {}; allIds.forEach((id) => (v[id] = parse(id)));
-    const extra = { dropped: [] };
-    composites.forEach((t) => {
-      if (t.mode === "auto") {
-        const xs = t.from.map((id) => (v[id] == null ? 0 : v[id]));
-        const raw = t.rule === "top3" ? top3(xs) : avg(xs);
-        if (t.rule === "top3") extra.dropped.push(t.from[xs.indexOf(Math.min(...xs))]);
-        v[t.id] = r05(raw);
-        $(t.id).value = fmt(v[t.id], 1); $(t.id).dataset.auto = "1"; $(t.id).classList.remove("err");
-      }
+    const dropped = [];
+    comps.forEach((t) => {
+      if (t.mode !== "auto") return;
+      const xs = t.from.map((id) => (v[id] == null ? 0 : v[id]));
+      if (t.rule === "top3") dropped.push(t.from[xs.indexOf(Math.min(...xs))]);
+      v[t.id] = r05(t.rule === "top3" ? top3(xs) : avg(xs));
+      $(t.id).value = fmt(v[t.id]); $(t.id).dataset.auto = "1"; $("w-" + t.id).classList.remove("err");
     });
-    return { v, extra };
+    return { v, dropped };
   }
 
-  // ---------- Cálculo (campos vazios = 0) ----------
+  // ---------- Cálculo (vazio = 0) ----------
   function compute(v, over) {
     const g = (id) => { const x = over && id in over ? over[id] : v[id]; return x == null ? 0 : x; };
     const eff = {}, subs = [];
     D.provas.forEach((grp) => {
       const ps = over && grp.ps in over ? over[grp.ps] : v[grp.ps];
-      grp.ids.forEach((id) => {
-        const p = g(id);
-        if (ps != null && ps > p) { eff[id] = ps; subs.push(id); } else eff[id] = p;
-      });
+      grp.ids.forEach((id) => { const p = g(id); if (ps != null && ps > p) { eff[id] = ps; subs.push(id); } else eff[id] = p; });
     });
     let num = 0, den = 0;
     for (const id in D.pesosProvas) { num += D.pesosProvas[id] * eff[id]; den += D.pesosProvas[id]; }
     const MP = r1(num / den);
     const T = {}; D.trabalhos.forEach((t) => (T[t.id] = g(t.id)));
     const MT = r1(D.mt(T));
-    return { MP, MT, MF: r1(D.mf(MP, MT)), subs };
+    return { MP, MT, MF: r1(D.mf(MP, MT)), eff, subs };
   }
-
-  // Menor nota (múltiplo de 0,5) no campo "id" que leva MF ao mínimo.
   function needed(v, id, extra) {
     for (let k = 0; k <= 20; k++) {
       const x = k / 2;
@@ -305,123 +340,123 @@ footer { font-size: 0.78rem; color: var(--muted); }
   }
 
   // ---------- Atualização ----------
+  const ARC = Math.PI * 80;
   function render() {
-    const { v, extra } = readAll();
-    const anyFilled = allIds.some((id) => v[id] != null);
+    const { v, dropped } = readAll();
+    const any = allIds.some((id) => v[id] != null);
     const r = compute(v);
+    const min = fmt(D.minimo);
 
-    allIds.forEach((id) => $("w-" + id).classList.remove("dropped", "subbed"));
-    if (anyFilled) {
-      extra.dropped.forEach((id) => { if (v[id] != null) $("w-" + id).classList.add("dropped"); });
-      r.subs.forEach((id) => { if (v[id] != null) $("w-" + id).classList.add("subbed"); });
+    allIds.forEach((id) => $("w-" + id).classList.remove("x"));
+    if (any) {
+      dropped.forEach((id) => { if (v[id] != null) $("w-" + id).classList.add("x"); });
+      r.subs.forEach((id) => { if (v[id] != null) $("w-" + id).classList.add("x"); });
     }
+    document.querySelectorAll(".sp button").forEach((b) => { const el = $(b.dataset.for); b.disabled = el.readOnly || el.disabled; });
     $("halfmsg").hidden = !halfError;
-    document.querySelectorAll(".st button").forEach((b) => { const el = $(b.dataset.for); b.disabled = el.readOnly || el.disabled; });
 
-    $("mpv").textContent = "MP = " + (anyFilled ? fmt(r.MP, 1) : "–");
-    $("mtv").textContent = "MT = " + (anyFilled ? fmt(r.MT, 1) : "–");
-    $("mf").textContent = anyFilled ? fmt(r.MF, 1) : "–";
-    $("fill").style.width = anyFilled ? Math.min(100, r.MF * 10) + "%" : "0";
-    $("fill").style.background = anyFilled && r.MF >= D.minimo - 1e-9 ? "var(--ok)" : "var(--accent)";
+    // Coluna "Vale"
+    D.provas.forEach((g, i) => {
+      const used = g.ids.filter((id) => v[id] != null || (v[g.ps] != null));
+      const sub = r.subs.some((id) => g.ids.includes(id));
+      $("v-prov" + i).innerHTML = any && used.length ? g.ids.map((id) => (v[id] == null && v[g.ps] == null ? "–" : fmt(r.eff[id]))).join(" · ") + (sub ? `<small>com a ${g.ps}</small>` : "") : "–";
+    });
+    D.trabalhos.forEach((t) => { $("v-" + t.id).textContent = v[t.id] == null ? "–" : fmt(v[t.id]); });
 
-    // Campos que ainda contam como zero (P4 e PS ficam de fora: são o que a calculadora projeta).
+    // Medidor
+    const mfShown = any ? r.MF : 0;
+    $("arc").setAttribute("stroke-dasharray", `${(Math.min(10, mfShown) / 10) * ARC} 400`);
+    $("arc").setAttribute("stroke", any && r.MF >= D.minimo - 1e-9 ? "#3ccf8e" : "#8fb8e8");
+    $("arc").setAttribute("stroke-opacity", any && r.MF > 0 ? "1" : "0");
+    $(D.alvo).placeholder = "";
+    $("mf").textContent = any ? fmt(r.MF) : "–";
+
     const blanks = [];
     D.provas.forEach((g) => g.ids.forEach((id) => { if (id !== D.alvo && v[id] == null) blanks.push(id); }));
     D.trabalhos.forEach((t) => {
       if (t.from && t.mode === "auto") t.from.forEach((id) => { if (v[id] == null) blanks.push(id); });
       else if (v[t.id] == null) blanks.push(t.id);
     });
-    $("mfcap").textContent = !anyFilled ? "preencha suas notas" : v[D.alvo] == null ? "até agora, com " + D.alvo + " = 0" : blanks.length ? "até agora" : "final";
+    $("mfcap").textContent = !any ? "média final" : v[D.alvo] == null ? "até agora, com " + D.alvo + " = 0" : blanks.length ? "até agora" : "média final";
+    $("blanks").textContent = any && blanks.length ? "Em branco, contando como zero: " + blanks.join(", ") + "." : "";
 
-    $("parts").innerHTML = anyFilled
-      ? `<dt>Média de provas (MP)</dt><dd>${fmt(r.MP, 1)}</dd><dt>Média de trabalhos (MT)</dt><dd>${fmt(r.MT, 1)}</dd>` +
+    $("kv").innerHTML = any
+      ? `<dt>MP (provas)</dt><dd>${fmt(r.MP)}</dd><dt>MT (trabalhos)</dt><dd>${fmt(r.MT)}</dd>` +
         (r.subs.length ? `<dt>Substituídas pela PS</dt><dd>${r.subs.join(", ")}</dd>` : "")
-      : "";
-    $("blanks").innerHTML = anyFilled && blanks.length
-      ? `<b>Em branco, contando como zero:</b> ${blanks.join(", ")}. Se você já tem essas notas, preencha para o cálculo ficar certo.`
-      : "";
+      : `<dt>Fórmula</dt><dd>0,6·MP + 0,4·MT</dd>`;
 
-    const st = $("status"); st.className = "status";
-    const min = fmt(D.minimo, 1);
-    if (!anyFilled) {
-      st.innerHTML = `<span class="t">Como usar</span><p>Digite as notas que você já tem. Enquanto a ${D.alvo} estiver vazia, aqui aparece quanto você precisa tirar nela para fechar com média ${min}.</p>`;
+    const nd = $("need"); nd.className = "need";
+    if (!any) {
+      nd.innerHTML = `<span class="l">Como usar</span><p>Digite as notas que você já tem. Enquanto a ${D.alvo} estiver vazia, aqui aparece quanto você precisa tirar nela para fechar com ${min}.</p>`;
       return;
     }
     if (v[D.alvo] == null) {
       const n = needed(v, D.alvo);
       if (n === 0) {
-        st.classList.add("ok");
-        st.innerHTML = `<span class="t">Você já atingiu a média ${min}</span>` +
-          `<p>Mesmo sem a ${D.alvo}, sua média já fica em ${fmt(r.MF, 1)}. Parabéns!</p>` +
-          `<p>Mas o conteúdo do 4º bimestre é tão importante quanto o dos outros: ele é base para disciplinas que vêm pela frente e para a sua prática como engenheiro. Continue frequentando as aulas e fazendo as atividades e as provas até o fim do ano.</p>`;
+        nd.classList.add("ok");
+        nd.innerHTML = `<span class="l">Média ${min} já atingida</span><p>Mesmo sem a ${D.alvo}, sua média fica em ${fmt(r.MF)}. Parabéns!</p>` +
+          `<p>O conteúdo do 4º bimestre é tão importante quanto o dos outros: é base para as disciplinas que vêm pela frente e para a sua prática como engenheiro. Continue frequentando as aulas e fazendo as atividades e as provas até o fim do ano.</p>`;
       } else if (isFinite(n)) {
-        if (n > 8) st.classList.add("warn");
-        st.innerHTML = `<span class="t">Você precisa tirar na ${D.alvo}</span><span class="need">${fmt(n, 1)}</span><p>para fechar com média ${min}.</p>`;
+        nd.classList.add("gold");
+        nd.innerHTML = `<span class="l">Você precisa na ${D.alvo}</span><span class="v">${fmt(n)}</span><p>para fechar com média ${min}</p>`;
+        $(D.alvo).placeholder = fmt(n) + "?";
       } else {
         const nps = needed(v, D.alvoPS, { [D.alvo]: 10 });
-        st.classList.add("bad");
-        st.innerHTML = isFinite(nps)
-          ? `<span class="t">Só a ${D.alvo} não basta</span><p>Mesmo com 10 na ${D.alvo}, a média não chega a ${min}. Com 10 na ${D.alvo}, você ainda precisaria de <b>${fmt(nps, 1)}</b> na ${D.alvoPS}.</p>`
-          : `<span class="t">Média ${min} fora de alcance</span><p>Com as notas informadas, nem a ${D.alvo} nem a ${D.alvoPS} conseguem levar a média a ${min}. Confira se não há notas faltando e fale com o professor.</p>`;
+        nd.classList.add("bad");
+        nd.innerHTML = isFinite(nps)
+          ? `<span class="l">Só a ${D.alvo} não basta</span><p>Mesmo com 10 na ${D.alvo}, a média não chega a ${min}. Com 10 na ${D.alvo}, você ainda precisaria de <b>${fmt(nps)}</b> na ${D.alvoPS}.</p>`
+          : `<span class="l">Média ${min} fora de alcance</span><p>Com as notas informadas, nem a ${D.alvo} nem a ${D.alvoPS} levam a média a ${min}. Confira se não falta nenhuma nota e fale com o professor.</p>`;
       }
       return;
     }
     if (r.MF >= D.minimo - 1e-9) {
-      st.classList.add("ok");
-      st.innerHTML = `<span class="t">Aprovado</span><p>Média ${fmt(r.MF, 1)}.</p>`;
+      nd.classList.add("ok");
+      nd.innerHTML = `<span class="l">Aprovado</span><p>Média final ${fmt(r.MF)}.</p>`;
       return;
     }
     if (v[D.alvoPS] == null) {
       const nps = needed(v, D.alvoPS);
-      st.classList.add(isFinite(nps) ? "warn" : "bad");
-      st.innerHTML = isFinite(nps)
-        ? `<span class="t">Você precisa tirar na ${D.alvoPS}</span><span class="need">${fmt(nps, 1)}</span><p>A ${D.alvoPS} substitui a menor entre P3 e P4 (ou as duas) quando for maior.</p>`
-        : `<span class="t">Média ${min} fora de alcance</span><p>Nem com 10 na ${D.alvoPS} a média chega a ${min}. Fale com o professor.</p>`;
+      if (isFinite(nps)) {
+        nd.classList.add("gold");
+        nd.innerHTML = `<span class="l">Você precisa na ${D.alvoPS}</span><span class="v">${fmt(nps)}</span><p>A ${D.alvoPS} substitui a menor entre P3 e P4 (ou as duas) quando for maior.</p>`;
+      } else {
+        nd.classList.add("bad");
+        nd.innerHTML = `<span class="l">Média ${min} fora de alcance</span><p>Nem com 10 na ${D.alvoPS} a média chega a ${min}. Fale com o professor.</p>`;
+      }
       return;
     }
-    st.classList.add("bad");
-    st.innerHTML = `<span class="t">Abaixo de ${min}</span><p>Com todas as provas lançadas, a média ficou em ${fmt(r.MF, 1)}.</p>`;
+    nd.classList.add("bad");
+    nd.innerHTML = `<span class="l">Abaixo de ${min}</span><p>Com todas as provas lançadas, a média final ficou em ${fmt(r.MF)}.</p>`;
   }
 
-  // ---------- Notas salvas no dispositivo ----------
-  // localStorage: funciona dentro do iframe do Canvas (cookies de terceiros costumam ser bloqueados).
-  function save() {
-    try {
-      const o = {};
-      allIds.forEach((id) => { if (!$(id).readOnly) o[id] = $(id).value; });
-      localStorage.setItem(STORE, JSON.stringify(o));
-      $("saved").textContent = allIds.some((id) => o[id]) ? "Suas notas ficam salvas neste navegador." : "";
-    } catch (e) { $("saved").textContent = ""; }
-  }
-  function load() {
-    try { const o = JSON.parse(localStorage.getItem(STORE) || "{}"); allIds.forEach((id) => { if (o[id]) $(id).value = o[id]; }); } catch (e) {}
-  }
-  const EXEMPLO = { P1: "4,5", P2: "3,0", PS1: "5,0", P3: "4,0", A1: "6", A2: "0", A3: "7", A4: "5", T2: "6,5", A5: "7", A6: "5", A7: "6", T4: "7", T5: "5" };
-
-  allIds.forEach((id) => {
-    const el = $(id);
-    el.addEventListener("input", () => { if (el.dataset.auto === "1" && !el.readOnly) delete el.dataset.auto; render(); save(); });
-    // Setas ↑/↓ do teclado em qualquer campo.
-    el.addEventListener("keydown", (e) => {
-      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-      e.preventDefault(); step(id, e.key === "ArrowUp" ? 1 : -1);
-    });
-  });
-  // Botões ▲▼ ao lado de cada campo.
-  document.querySelectorAll(".st button").forEach((b) => b.addEventListener("click", () => step(b.dataset.for, Number(b.dataset.dir))));
-  // Sobe/desce para o próximo múltiplo de 0,5 (7,0 → 7,5; numa atividade, 7,3 → 7,5 ou 7,0). Vazio começa em 0.
+  // ---------- Setinhas e teclado ----------
   function step(id, dir) {
     const el = $(id);
     if (el.readOnly || el.disabled) return;
     const raw = el.value.trim().replace(",", ".");
     const cur = raw === "" || !isFinite(Number(raw)) ? null : Number(raw);
-    let nx;
-    if (cur == null) nx = 0;
-    else if (dir > 0) nx = Math.floor(cur * 2 + 1e-9) / 2 + 0.5;
-    else nx = Math.ceil(cur * 2 - 1e-9) / 2 - 0.5;
+    let nx = cur == null ? 0 : dir > 0 ? Math.floor(cur * 2 + 1e-9) / 2 + 0.5 : Math.ceil(cur * 2 - 1e-9) / 2 - 0.5;
     nx = Math.min(10, Math.max(0, nx));
-    el.value = fmt(nx, 1); delete el.dataset.auto; render(); save();
+    el.value = fmt(nx); delete el.dataset.auto; render(); save();
   }
+  allIds.forEach((id) => {
+    const el = $(id);
+    el.addEventListener("input", () => { if (!el.readOnly) delete el.dataset.auto; render(); save(); });
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+      e.preventDefault(); step(id, e.key === "ArrowUp" ? 1 : -1);
+    });
+  });
+  document.querySelectorAll(".sp button").forEach((b) => b.addEventListener("click", () => { step(b.dataset.for, Number(b.dataset.dir)); $(b.dataset.for).focus(); }));
+
+  // ---------- Notas salvas no navegador (localStorage funciona dentro do iframe do Canvas) ----------
+  function save() {
+    try { const o = {}; allIds.forEach((id) => { if (!$(id).readOnly) o[id] = $(id).value; }); localStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+  }
+  function load() {
+    try { const o = JSON.parse(localStorage.getItem(STORE) || "{}"); allIds.forEach((id) => { if (o[id]) $(id).value = o[id]; }); } catch (e) {}
+  }
+  const EXEMPLO = { P1: "4,5", P2: "3,0", PS1: "5,0", P3: "4,0", A1: "6", A2: "0", A3: "7", A4: "5", T2: "6,5", A5: "7", A6: "5", A7: "6", T4: "7,0", L1: "6", L2: "5", L3: "4", L4: "5" };
   function setAll(src) {
     allIds.forEach((id) => { const el = $(id); el.value = src[id] || ""; delete el.dataset.auto; el.readOnly = false; el.disabled = false; });
     render(); save();
@@ -429,7 +464,20 @@ footer { font-size: 0.78rem; color: var(--muted); }
   $("ex").addEventListener("click", () => setAll(EXEMPLO));
   $("clr").addEventListener("click", () => { setAll({}); $(allIds[0]).focus(); });
 
-  load(); render(); save();
+  // ---------- Abas ----------
+  let typeset = false;
+  function tab(which) {
+    const fx = which === "fx";
+    $("tab-notas").setAttribute("aria-selected", String(!fx)); $("tab-fx").setAttribute("aria-selected", String(fx));
+    $("pane-notas").hidden = fx; $("pane-fx").hidden = !fx;
+    $("ex").parentElement.style.visibility = fx ? "hidden" : "";
+    // MathJax já renderiza tudo ao carregar; isto só refaz se a aba foi aberta antes de ele terminar.
+    if (fx && !typeset && window.MathJax && MathJax.typesetPromise && !$("pane-fx").querySelector("mjx-container")) { typeset = true; MathJax.typesetPromise([$("pane-fx")]).catch(() => { typeset = false; }); }
+  }
+  $("tab-notas").addEventListener("click", () => tab("notas"));
+  $("tab-fx").addEventListener("click", () => tab("fx"));
+
+  load(); render();
 })();
 </script>
 
