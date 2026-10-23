@@ -63,7 +63,7 @@ th { text-align: left; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.1
 th.r { text-align: right; }
 td { background: var(--card); padding: 7px 6px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); vertical-align: middle; }
 td.it { border-left: 1px solid var(--line); border-radius: 8px 0 0 8px; padding-left: 12px; width: 128px; }
-td.it b { display: block; font-size: 0.84rem; font-weight: 600; white-space: nowrap; }
+td.it b { display: block; font-size: 0.84rem; font-weight: 600; line-height: 1.25; }
 td.it small { display: block; font-size: 0.68rem; color: var(--muted); line-height: 1.25; }
 td.va { border-right: 1px solid var(--line); border-radius: 0 8px 8px 0; text-align: right; padding-right: 12px; font: 700 0.9rem var(--mono); white-space: nowrap; width: 76px; }
 td.va small { display: block; font: 500 0.64rem var(--font); color: var(--muted); }
@@ -113,6 +113,15 @@ footer p { margin: 0; }
   td.va { width: auto; padding: 8px 10px 2px; }
   tr > td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; padding: 4px 10px 10px; }
 }
+.c.on { border-color: var(--gold); box-shadow: 0 0 0 2px #f2b54455; }
+.pop { position: absolute; z-index: 20; width: min(300px, calc(100vw - 16px)); background: var(--navy); color: #fff; border-radius: 12px; padding: 10px 12px 12px; display: grid; gap: 8px; box-shadow: 0 10px 28px #13202c66; }
+.pop .hd { display: flex; justify-content: space-between; align-items: baseline; font: 600 0.85rem var(--mono); color: var(--sky); }
+.pop .hd b { font: 700 1.7rem/1 var(--mono); color: var(--gold); }
+.pop input[type=range] { width: 100%; height: 32px; margin: 0; accent-color: var(--gold); }
+.pop .tk { display: flex; justify-content: space-between; font: 500 0.64rem var(--mono); color: var(--sky); margin-top: -6px; }
+.pop .bt { display: flex; gap: 6px; }
+.pop .bt button { flex: 1; font: 600 0.82rem var(--font); padding: 9px 0; border-radius: 8px; border: 1px solid var(--navy3); background: var(--navy2); color: #fff; cursor: pointer; }
+.pop .bt .ok { background: var(--gold); border-color: var(--gold); color: var(--navy); }
 @media (prefers-reduced-motion: reduce) { #arc { transition: none; } }
 </style>
 
@@ -171,7 +180,7 @@ footer p { margin: 0; }
       </section>
       <div class="two">
         <section>
-          <h3>3 · Peer instruction (T1 e T3)</h3>
+          <h3>3 · Exercícios em sala (T1 e T3)</h3>
           <p>Média das 3 maiores atividades do semestre.</p>
           <div class="eq">\[ T_1=\frac{\text{soma das 3 maiores de }A_1\ldots A_4}{3} \]</div>
           <div class="eq">\[ T_3=\frac{\text{soma das 3 maiores de }A_5\ldots A_8}{3} \]</div>
@@ -183,13 +192,19 @@ footer p { margin: 0; }
           <p>T2 e T4 são as notas dos laboratórios de cada semestre.</p>
         </section>
       </div>
+      <div class="two">
+        <section>
+          <h3>5 · Média de trabalhos</h3>
+          <div class="eq">\[ MT=\frac{T_1+T_2+T_3+T_4+T_5}{5} \]</div>
+        </section>
+        <section>
+          <h3>6 · Média final</h3>
+          <div class="eq">\[ MF=0{,}6\,MP+0{,}4\,MT \]</div>
+          <p>Aprovado se \(MF\ge 6{,}0\).</p>
+        </section>
+      </div>
       <section>
-        <h3>5 · Média de trabalhos e média final</h3>
-        <div class="eq">\[ MT=\frac{T_1+T_2+T_3+T_4+T_5}{5} \]</div>
-        <div class="eq">\[ MF=0{,}6\,MP+0{,}4\,MT\qquad \text{aprovado se } MF\ge 6{,}0 \]</div>
-      </section>
-      <section>
-        <h3>6 · Arredondamentos e nota necessária</h3>
+        <h3>7 · Arredondamentos e nota necessária</h3>
         <p>T1, T3 e T5 são arredondados para o múltiplo de 0,5 mais próximo (6,25 vira 6,5; 6,24 vira 6,0). MP, MT e MF são arredondadas com uma casa decimal (5,95 vira 6,0), e a MF é calculada com MP e MT já arredondadas. Provas e notas T são sempre múltiplos de 0,5.</p>
         <div class="eq">\[ P_4^{\text{nec}}=\min\{\,x\in\{0;\,0{,}5;\,\ldots;\,10\}\;:\;MF(P_4=x)\ge 6{,}0\,\} \]</div>
         <p>A nota necessária na PS2 é calculada do mesmo jeito, trocando \(P_4\) por \(PS_2\).</p>
@@ -198,9 +213,17 @@ footer p { margin: 0; }
   </div>
 </div>
 
+<div class="pop" id="pop" hidden role="dialog" aria-label="Ajustar nota">
+  <div class="hd"><span id="pop-l">P1</span><b id="pop-v">–</b></div>
+  <input type="range" id="pop-r" min="0" max="10" step="0.5" value="5" aria-label="Nota">
+  <div class="tk"><span>0</span><span>2,5</span><span>5</span><span>7,5</span><span>10</span></div>
+  <div class="bt"><button type="button" data-pd="-1" aria-label="Diminuir 0,5">− 0,5</button><button type="button" data-pd="1" aria-label="Aumentar 0,5">+ 0,5</button><button type="button" id="pop-clr">Limpar</button></div>
+  <div class="bt"><button type="button" id="pop-kb">Digitar</button><button type="button" class="ok" id="pop-ok">OK</button></div>
+</div>
+
 <footer>
   <p><b>Ferramenta de apoio para planejamento.</b> A nota oficial é a lançada pelo professor no sistema da Mauá; em caso de diferença, vale a do sistema.</p>
-  <p>Campos em branco contam como zero. Atividades e listas aceitam qualquer valor; provas e notas T vão de 0,5 em 0,5. Use as setinhas ou ↑ ↓ do teclado para ajustar.</p>
+  <p>Campos em branco contam como zero. Atividades e listas aceitam qualquer valor; provas e notas T vão de 0,5 em 0,5. No computador, ajuste com as setinhas, com ↑ ↓ ou com a rodinha do mouse (com o campo selecionado). No celular, toque na nota para usar o controle deslizante.</p>
   <p>Suas notas ficam salvas só neste navegador e não são enviadas a ninguém.</p>
 </footer>
 
@@ -211,6 +234,7 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
 <script>
 (function () {
   "use strict";
+  const coarse = window.matchMedia && matchMedia("(pointer: coarse)").matches;
 
   // ---------- Regras de arredondamento (sistema da Mauá) ----------
   const r05 = (x) => Math.round(x * 2 + 1e-9) / 2;   // provas e Ts: múltiplo de 0,5 mais próximo
@@ -228,9 +252,9 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
       ],
       pesosProvas: { P1: 2, P2: 2, P3: 3, P4: 3 },
       trabalhos: [
-        { id: "T1", label: "T1 · Peer instr.", from: ["A1", "A2", "A3", "A4"], rule: "top3", what: "atividades" },
+        { id: "T1", label: "T1 · Exercícios em sala", from: ["A1", "A2", "A3", "A4"], rule: "top3", what: "atividades" },
         { id: "T2", label: "T2 · Laboratório", hint: "1º semestre" },
-        { id: "T3", label: "T3 · Peer instr.", from: ["A5", "A6", "A7", "A8"], rule: "top3", what: "atividades" },
+        { id: "T3", label: "T3 · Exercícios em sala", from: ["A5", "A6", "A7", "A8"], rule: "top3", what: "atividades" },
         { id: "T4", label: "T4 · Laboratório", hint: "2º semestre" },
         { id: "T5", label: "T5 · Listas online", from: ["L1", "L2", "L3", "L4"], rule: "avg", what: "listas" }
       ],
@@ -368,7 +392,7 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
     $("arc").setAttribute("stroke-dasharray", `${(Math.min(10, mfShown) / 10) * ARC} 400`);
     $("arc").setAttribute("stroke", any && r.MF >= D.minimo - 1e-9 ? "#3ccf8e" : "#8fb8e8");
     $("arc").setAttribute("stroke-opacity", any && r.MF > 0 ? "1" : "0");
-    $(D.alvo).placeholder = "";
+    $(D.alvo).placeholder = ""; $(D.alvoPS).placeholder = ""; $("w-" + D.alvoPS).classList.remove("goal");
     $("mf").textContent = any ? fmt(r.MF) : "–";
 
     const blanks = [];
@@ -418,6 +442,7 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
       const nps = needed(v, D.alvoPS);
       if (isFinite(nps)) {
         nd.classList.add("gold");
+        $(D.alvoPS).placeholder = fmt(nps) + "?"; $("w-" + D.alvoPS).classList.add("goal");
         nd.innerHTML = `<span class="l">Você precisa na ${D.alvoPS}</span><span class="v">${fmt(nps)}</span><p>A ${D.alvoPS} substitui a menor entre P3 e P4 (ou as duas) quando for maior.</p>`;
       } else {
         nd.classList.add("bad");
@@ -446,8 +471,57 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
       if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
       e.preventDefault(); step(id, e.key === "ArrowUp" ? 1 : -1);
     });
+    // Rodinha do mouse: só age com o campo selecionado, para não atrapalhar a rolagem da página.
+    el.addEventListener("wheel", (e) => {
+      if (document.activeElement !== el || el.readOnly || el.disabled) return;
+      e.preventDefault(); step(id, e.deltaY < 0 ? 1 : -1);
+    }, { passive: false });
+    // Celular/tablet: sem teclado; tocar no campo abre o controle deslizante.
+    if (coarse) {
+      el.inputMode = "none";
+      el.addEventListener("focus", () => { if (el.inputMode === "none" && !el.readOnly && !el.disabled) openPop(id); });
+      el.addEventListener("blur", () => { el.inputMode = "none"; });
+    }
   });
-  document.querySelectorAll(".sp button").forEach((b) => b.addEventListener("click", () => { step(b.dataset.for, Number(b.dataset.dir)); $(b.dataset.for).focus(); }));
+  document.querySelectorAll(".sp button").forEach((b) => b.addEventListener("click", () => {
+    step(b.dataset.for, Number(b.dataset.dir));
+    if (!coarse) $(b.dataset.for).focus(); else if (popId === b.dataset.for) syncPop();
+  }));
+
+  // ---------- Controle deslizante (celular) ----------
+  const pop = $("pop"), popR = $("pop-r");
+  let popId = null;
+  const numOf = (id) => { const raw = $(id).value.trim().replace(",", "."); return raw === "" || !isFinite(Number(raw)) ? null : Number(raw); };
+  function syncPop() {
+    if (!popId) return;
+    const cur = numOf(popId);
+    $("pop-v").textContent = cur == null ? "–" : fmt(cur);
+    popR.value = cur == null ? 5 : Math.min(10, Math.max(0, cur));
+  }
+  function openPop(id) {
+    if (popId && popId !== id) $("w-" + popId).classList.remove("on");
+    popId = id; $("pop-l").textContent = id; syncPop();
+    pop.hidden = false;
+    const r = $("w-" + id).getBoundingClientRect(), vw = document.documentElement.clientWidth;
+    const left = Math.max(8, Math.min(r.left, vw - pop.offsetWidth - 8));
+    pop.style.left = left + window.scrollX + "px";
+    pop.style.top = r.bottom + window.scrollY + 6 + "px";
+    $("w-" + id).classList.add("on");
+  }
+  function closePop() { if (popId) $("w-" + popId).classList.remove("on"); popId = null; pop.hidden = true; }
+  popR.addEventListener("input", () => {
+    const el = $(popId); if (!el || el.readOnly || el.disabled) return;
+    el.value = fmt(Number(popR.value)); delete el.dataset.auto; render(); save();
+    $("pop-v").textContent = fmt(Number(popR.value));
+  });
+  pop.querySelectorAll("[data-pd]").forEach((b) => b.addEventListener("click", () => { step(popId, Number(b.dataset.pd)); syncPop(); }));
+  $("pop-clr").addEventListener("click", () => { const el = $(popId); el.value = ""; delete el.dataset.auto; render(); save(); syncPop(); });
+  $("pop-kb").addEventListener("click", () => { const el = $(popId); closePop(); el.inputMode = "decimal"; el.blur(); el.focus(); el.inputMode = "decimal"; });
+  $("pop-ok").addEventListener("click", closePop);
+  document.addEventListener("pointerdown", (e) => {
+    if (!popId || pop.contains(e.target) || $("w-" + popId).contains(e.target)) return;
+    closePop();
+  });
 
   // ---------- Notas salvas no navegador (localStorage funciona dentro do iframe do Canvas) ----------
   function save() {
