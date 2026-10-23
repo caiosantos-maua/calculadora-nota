@@ -125,12 +125,12 @@ footer p { margin: 0; }
   .tot { padding-left: 0; }
   .tot .arrow .d { display: none; } .tot .arrow .m { display: inline; }
   td.it, td.va { cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-  td.it .chev { display: inline-block; width: 14px; color: var(--muted); transition: transform .2s; }
-  tr.fold .chev { transform: rotate(-90deg); }
+  td.it .fbtn { display: inline-flex; }
+  tr.fold { background: #f3f6f9; border-style: dashed; }
   tr.fold > td:nth-child(2) { display: none; }
   tr.fold td.it, tr.fold td.va { padding-bottom: 9px; }
   tr.fold td.it small { display: none; }
-  p.msg.mob { display: block; margin: 0 0 4px; }
+  p.msg.mob { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 6px; }
 }
 .c.on { border-color: var(--gold); box-shadow: 0 0 0 2px #f2b54455; }
 .pop { position: absolute; z-index: 20; width: min(300px, calc(100vw - 16px)); background: var(--navy); color: #fff; border-radius: 12px; padding: 10px 12px 12px; display: grid; gap: 8px; box-shadow: 0 10px 28px #13202c66; }
@@ -154,7 +154,10 @@ footer p { margin: 0; }
 .c.tfin input { font-size: 1.05rem; padding-block: 8px; }
 .c.tfin > label { font-size: 0.74rem; font-weight: 700; color: var(--ink); min-width: 30px; }
 .c.tfin.auto { background: #e6eef6; border-color: #aebbc8; }
-.chev { display: none; }
+.fbtn { display: none; align-items: center; gap: 4px; margin-top: 5px; font: 600 0.7rem var(--font); color: var(--navy3); background: #e7eef5; border: 1px solid #c3d1de; border-radius: 999px; padding: 3px 10px 3px 8px; cursor: pointer; }
+.fbtn .fi { font-size: 0.62rem; }
+tr.fold .fbtn { background: var(--navy3); border-color: var(--navy3); color: #fff; }
+#foldall { flex: none; font: 600 0.72rem var(--font); color: var(--navy3); background: var(--card); border: 1px solid #c3d1de; border-radius: 6px; padding: 5px 9px; cursor: pointer; }
 .mob { display: none; }
 /* Celular/tablet: sem setinhas nem × (o ajuste é pelo controle deslizante); campos mais estreitos. */
 @media (pointer: coarse) {
@@ -196,7 +199,7 @@ footer p { margin: 0; }
     </div>
 
     <div id="pane-notas" role="tabpanel" aria-labelledby="tab-notas">
-      <p class="msg mob">Toque no nome de um item para recolher ou abrir o quadro.</p>
+      <p class="msg mob"><span>Já preencheu um item? Toque em <b>ocultar</b> para recolher o quadro e rolar menos.</span><button type="button" id="foldall">Ocultar todos</button></p>
       <div class="tbl">
         <table>
           <thead><tr><th>Item</th><th>Notas</th><th class="r">Vale</th></tr></thead>
@@ -329,12 +332,12 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
   }
   let html = "";
   D.provas.forEach((g, i) => {
-    html += `<tr><td class="it"><b><span class="chev" aria-hidden="true">▾</span>${g.label}</b><small>${g.ps} substitui a menor</small></td><td><div class="cells">` +
+    html += `<tr><td class="it"><b>${g.label}</b><small>${g.ps} substitui a menor</small><button type="button" class="fbtn" aria-expanded="true"><span class="fi" aria-hidden="true">▴</span><span class="ft">ocultar</span></button></td><td><div class="cells">` +
       g.ids.map((id) => cell(id, id === D.alvo ? "goal" : "", true)).join("") + cell(g.ps, "ps", true) +
       `</div></td><td class="va" id="v-prov${i}">–</td></tr>`;
   });
   D.trabalhos.forEach((t) => {
-    html += `<tr><td class="it"><b><span class="chev" aria-hidden="true">▾</span>${t.label}</b><small id="m-${t.id}">${t.hint || ""}</small></td><td><div class="cells">` +
+    html += `<tr><td class="it"><b>${t.label}</b><small id="m-${t.id}">${t.hint || ""}</small><button type="button" class="fbtn" aria-expanded="true"><span class="fi" aria-hidden="true">▴</span><span class="ft">ocultar</span></button></td><td><div class="cells">` +
       (t.from
         ? `<div class="comp"><div class="parts"><span class="pl">${t.cap}</span><div class="pc">${t.from.map((id) => cell(id, "part")).join("")}</div></div>` +
           `<div class="tot"><span class="arrow" aria-hidden="true"><i class="d">↳</i><i class="m">→</i></span>${cell(t.id, "tfin", true)}</div></div>`
@@ -465,7 +468,8 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
       nd.innerHTML = `<span class="l">Como usar</span><p>Digite as notas que você já tem. Enquanto a ${D.alvo} estiver vazia, aqui aparece quanto você precisa tirar nela para fechar com ${min}.</p>`;
       return;
     }
-    if (v[D.alvo] == null) {
+    // Com a PS2 digitada, a P4 em branco é tratada como encerrada (a PS2 é a última avaliação do curso).
+    if (v[D.alvo] == null && v[D.alvoPS] == null) {
       const n = needed(v, D.alvo);
       if (n === 0) {
         nd.classList.add("ok");
@@ -531,6 +535,8 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
     if (coarse) {
       el.inputMode = "none";
       el.addEventListener("focus", () => { if (el.inputMode === "none" && !el.readOnly && !el.disabled) openPop(id); });
+      // Se o painel fechou mas o campo continuou selecionado, um novo toque reabre o painel.
+      el.addEventListener("click", () => { if (el.inputMode === "none" && !el.readOnly && !el.disabled && (pop.hidden || popId !== id)) openPop(id); });
       el.addEventListener("blur", () => { el.inputMode = "none"; });
     }
   });
@@ -559,7 +565,13 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
     pop.style.top = r.bottom + window.scrollY + 6 + "px";
     $("w-" + id).classList.add("on");
   }
-  function closePop() { if (popId) $("w-" + popId).classList.remove("on"); popId = null; pop.hidden = true; }
+  function closePop() {
+    if (popId) {
+      $("w-" + popId).classList.remove("on");
+      const el = $(popId); if (document.activeElement === el && el.inputMode === "none") el.blur();
+    }
+    popId = null; pop.hidden = true;
+  }
   popR.addEventListener("input", () => {
     const el = $(popId); if (!el || el.readOnly || el.disabled) return;
     el.value = fmt(Number(popR.value)); delete el.dataset.auto; render(); save();
@@ -619,12 +631,28 @@ window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]] }, svg: { fontCache: "glo
   const narrow = () => window.matchMedia && matchMedia("(max-width: 640px)").matches;
   const FOLD = STORE + "-recolhidos";
   const trs = Array.from($("rows").children);
-  try { (JSON.parse(localStorage.getItem(FOLD) || "[]")).forEach((i) => trs[i] && trs[i].classList.add("fold")); } catch (e) {}
+  function setFold(tr, on) {
+    tr.classList.toggle("fold", on);
+    const b = tr.querySelector(".fbtn");
+    b.setAttribute("aria-expanded", String(!on));
+    b.querySelector(".fi").textContent = on ? "▾" : "▴";
+    b.querySelector(".ft").textContent = on ? "mostrar" : "ocultar";
+  }
+  function syncFoldAll() { $("foldall").textContent = trs.every((t) => t.classList.contains("fold")) ? "Mostrar todos" : "Ocultar todos"; }
+  function saveFold() {
+    try { localStorage.setItem(FOLD, JSON.stringify(trs.map((t, i) => (t.classList.contains("fold") ? i : -1)).filter((i) => i >= 0))); } catch (e) {}
+    syncFoldAll();
+  }
+  try { (JSON.parse(localStorage.getItem(FOLD) || "[]")).forEach((i) => trs[i] && setFold(trs[i], true)); } catch (e) {}
+  syncFoldAll();
   $("rows").addEventListener("click", (e) => {
     if (!narrow()) return;
     const td = e.target.closest("td.it, td.va"); if (!td) return;
-    td.parentElement.classList.toggle("fold");
-    try { localStorage.setItem(FOLD, JSON.stringify(trs.map((t, i) => (t.classList.contains("fold") ? i : -1)).filter((i) => i >= 0))); } catch (e2) {}
+    const tr = td.parentElement; setFold(tr, !tr.classList.contains("fold")); saveFold();
+  });
+  $("foldall").addEventListener("click", () => {
+    const all = trs.every((t) => t.classList.contains("fold"));
+    trs.forEach((t) => setFold(t, !all)); saveFold();
   });
 
   load(); render();
